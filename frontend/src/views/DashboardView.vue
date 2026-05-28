@@ -77,16 +77,17 @@ const showTemplateModal = ref(false)
 const templateName = ref('')
 
 const dashboardUrl = computed(() => {
-  if (!store.sessionId) return ''
-  return `/dashboard/${store.sessionId}/${currentVersion.value}`
+  const sid = store.sessionId || route.params.sessionId
+  const ver = currentVersion.value || parseInt(route.params.version) || 1
+  if (!sid) return ''
+  return `/dashboard/${sid}/${ver}`
 })
 
-onMounted(async () => {
+onMounted(() => {
   store.sessionId = route.params.sessionId
   if (route.params.version) {
     currentVersion.value = parseInt(route.params.version)
   }
-  await store.fetchVersions()
 })
 
 async function copyLink() {

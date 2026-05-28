@@ -213,7 +213,8 @@ async function generate() {
     const result = await store.generateDashboard(store.userRefinements)
     progressPercent.value = 100
     progressText.value = '完成！'
-    router.push(`/dashboard/${store.sessionId}/${result.version}`)
+    // 直接導向到後端產生的 dashboard 頁面
+    window.location.href = result.dashboard_url
   } catch (e) {
     progressText.value = '生成失敗：' + (e?.message || '未知錯誤')
   } finally {
