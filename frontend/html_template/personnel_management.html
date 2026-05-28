@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>人員管理 - 1425 出勤系統</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Microsoft JhengHei","PingFang TC",-apple-system,Arial,sans-serif;
+    background: #050816;
+    background-image:
+      radial-gradient(at 20% 0%, rgba(236,72,153,0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, rgba(168,85,247,0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(34,211,238,0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: #e0e7ff;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* 頂部導覽列 */
+  .top-bar{
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border-bottom: 2px solid #f472b6;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-group{ display: inline-flex; gap: 8px; align-items: center; }
+  .nav-btn{
+    display: inline-flex; align-items: center; gap: 8px;
+    color: #fff; text-decoration: none;
+    font-size: 13px; font-weight: 700;
+    padding: 6px 14px; border-radius: 8px;
+    border: 1px solid; transition: all .2s;
+  }
+  .nav-btn.home{ color:#6ee7b7; background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); }
+  .nav-btn.home:hover{ background:rgba(16,185,129,0.25); transform:translateX(-2px); }
+  .nav-btn.dashboard{ color:#f9a8d4; background:rgba(236,72,153,0.15); border-color:rgba(236,72,153,0.4); }
+  .nav-btn.dashboard:hover{ background:rgba(236,72,153,0.25); transform:translateX(-2px); }
+  .top-bar .title{ color:#94a3b8; font-size:12px; letter-spacing:1px; }
+  .top-bar .title strong{ color:#f9a8d4; font-weight:700; }
+
+  /* Hero */
+  .hero{
+    text-align: center;
+    padding: 40px 20px 32px;
+    animation: fadeDown 0.8s ease;
+  }
+  @keyframes fadeDown{
+    from{ opacity:0; transform: translateY(-20px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .hero-icon{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, rgba(236,72,153,0.2), rgba(168,85,247,0.2));
+    border: 1px solid rgba(236,72,153,0.4);
+    border-radius: 14px;
+    font-size: 28px;
+    margin-bottom: 14px;
+    box-shadow: 0 0 24px rgba(236,72,153,0.3);
+  }
+  .hero h1{
+    font-size: 30px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ec4899, #a78bfa, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .hero-sub{
+    font-size: 12px;
+    color: #94a3b8;
+    letter-spacing: 3px;
+    font-weight: 500;
+  }
+  .hero-sub .pulse{
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulse 2s ease-in-out infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; transform: scale(1); }
+    50%{ opacity:0.5; transform: scale(1.2); }
+  }
+
+  /* 區段標題 */
+  .section-title{
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    letter-spacing: 4px;
+    margin: 20px 0 24px;
+    font-weight: 600;
+  }
+
+  /* 卡片區 */
+  .cards{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 280px));
+    gap: 18px;
+    justify-content: center;
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(20px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .card{
+    background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.7));
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 16px;
+    padding: 26px 18px 20px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    transition: all .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .card::before{
+    content:''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+  }
+  .card.overview{ --accent: linear-gradient(90deg, #ec4899, #a78bfa); }
+  .card.recv{    --accent: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .card.fin{     --accent: linear-gradient(90deg, #10b981, #34d399); }
+
+  .card:hover{
+    transform: translateY(-5px);
+    border-color: rgba(99,102,241,0.5);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(99,102,241,0.2);
+  }
+  .card.overview:hover{ box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(236,72,153,0.3); border-color: rgba(236,72,153,0.6); }
+  .card.recv:hover{ box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(245,158,11,0.3); border-color: rgba(245,158,11,0.6); }
+  .card.fin:hover{ box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 30px rgba(16,185,129,0.3); border-color: rgba(16,185,129,0.6); }
+
+  .card-icon{
+    width: 70px; height: 70px;
+    border-radius: 16px;
+    background: rgba(2,6,23,0.5);
+    border: 1px solid rgba(99,102,241,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin-bottom: 16px;
+    transition: all .3s;
+  }
+  .card.overview .card-icon{ box-shadow: inset 0 0 30px rgba(236,72,153,0.1); }
+  .card.recv .card-icon{ box-shadow: inset 0 0 30px rgba(245,158,11,0.1); }
+  .card.fin .card-icon{ box-shadow: inset 0 0 30px rgba(16,185,129,0.1); }
+
+  .card h3{
+    font-size: 18px;
+    font-weight: 800;
+    color: #f1f5f9;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .card .en{
+    font-size: 11px;
+    color: #64748b;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card .desc{
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.7;
+    margin-bottom: 14px;
+    min-height: 42px;
+  }
+  .card .badge{
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 1px;
+    background: rgba(16,185,129,0.18);
+    color: #6ee7b7;
+    border: 1px solid rgba(16,185,129,0.4);
+  }
+  .card .badge .dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* 底部資訊 */
+  .footer{
+    text-align: center;
+    padding: 24px 20px;
+    color: #475569;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .footer .divider{ margin: 0 8px; color: #334155; }
+</style>
+</head>
+<body>
+
+<!-- 頂部導覽 -->
+<div class="top-bar">
+  <div class="nav-group">
+    <a href="index.html" class="nav-btn home" title="回到 ONE WHM 首頁">
+      <span style="font-size:16px">⌂</span><span>回首頁</span>
+    </a>
+    <a href="1425_dashboard.html" class="nav-btn dashboard" title="回到 1425 報表中心">
+      <span style="font-size:16px">📊</span><span>報表中心</span>
+    </a>
+  </div>
+  <div class="title">
+    <strong>👥 人員管理</strong>
+    <span style="margin:0 8px;color:#475569">●</span>
+    <span>Personnel Management</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-icon">👥</div>
+  <h1>1425 出勤管理系統</h1>
+  <div class="hero-sub"><span class="pulse"></span>SYSTEM ONLINE</div>
+</div>
+
+<div class="section-title">◆ 請選擇檢視視角 ◆</div>
+
+<!-- 三張卡片 -->
+<div class="cards">
+
+  <a href="hr_overview.html" class="card overview">
+    <div class="card-icon">📊</div>
+    <h3>部門出勤總覽</h3>
+    <div class="en">DEPARTMENT OVERVIEW</div>
+    <div class="desc">自動讀取收料倉與成品倉<br>合併顯示整體出勤狀態</div>
+    <div class="badge"><span class="dot"></span>已上線</div>
+  </a>
+
+  <a href="hr_receiving.html" class="card recv">
+    <div class="card-icon">📥</div>
+    <h3>收料倉出勤</h3>
+    <div class="en">RECEIVING WAREHOUSE</div>
+    <div class="desc">收料倉人員班表<br>出勤紀錄 ｜ 排程管理</div>
+    <div class="badge"><span class="dot"></span>已上線</div>
+  </a>
+
+  <a href="hr_finished.html" class="card fin">
+    <div class="card-icon">📦</div>
+    <h3>成品倉出勤</h3>
+    <div class="en">FINISHED WAREHOUSE</div>
+    <div class="desc">成品倉人員班表<br>出勤紀錄 ｜ 排程管理</div>
+    <div class="badge"><span class="dot"></span>已上線</div>
+  </a>
+
+</div>
+
+<!-- 底部 -->
+<div class="footer">
+  <span>1425 人員管理系統</span>
+  <span class="divider">●</span>
+  <span>南茂科技 倉管部</span>
+  <span class="divider">●</span>
+  <span id="now"></span>
+</div>
+
+<script>
+// 人員管理入口密碼保護：若沒從 dashboard 走 session 驗證，本頁也檢查
+(function(){
+  var authed = false;
+  try { authed = sessionStorage.getItem('__1425_hr_authed__')==='1'; } catch(e){}
+  if(authed) return;
+  var HR_PWD_KEY = '__1425_emp_pwd_hash__';
+  function _hashPwd(s){
+    var h = 0x811c9dc5;
+    for(var i=0;i<s.length;i++){h ^= s.charCodeAt(i);h = (h * 0x01000193) >>> 0;}
+    return h.toString(16);
+  }
+  var stored = '';
+  try { stored = localStorage.getItem(HR_PWD_KEY) || ''; } catch(e){}
+  if(!stored){
+    var p1 = prompt('🔐 首次進入「人員管理」\n\n請設定管理密碼（之後每次進入都要輸入）\n注意：純前端密碼只防呆，不是真資安');
+    if(p1===null){ history.back(); return; }
+    p1 = String(p1).trim();
+    if(p1.length<2){ alert('密碼至少 2 個字'); history.back(); return; }
+    var p2 = prompt('請再輸入一次密碼確認');
+    if(p2===null || p1!==String(p2).trim()){ alert('密碼不一致'); history.back(); return; }
+    try { localStorage.setItem(HR_PWD_KEY, _hashPwd(p1)); } catch(e){}
+    try { sessionStorage.setItem('__1425_hr_authed__', '1'); } catch(e){}
+    alert('✅ 密碼已設定');
+    return;
+  }
+  var input = prompt('🔐 進入「人員管理」\n請輸入管理密碼：');
+  if(input===null || _hashPwd(String(input).trim()) !== stored){
+    alert('❌ 密碼錯誤，將回到首頁');
+    location.href = 'index.html';
+    return;
+  }
+  try { sessionStorage.setItem('__1425_hr_authed__', '1'); } catch(e){}
+})();
+
+function updateTime(){
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,"0");
+  const dd = String(now.getDate()).padStart(2,"0");
+  const hh = String(now.getHours()).padStart(2,"0");
+  const mi = String(now.getMinutes()).padStart(2,"0");
+  const ss = String(now.getSeconds()).padStart(2,"0");
+  document.getElementById("now").textContent = yyyy+"/"+mm+"/"+dd+" "+hh+":"+mi+":"+ss;
+}
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+
+</body>
+</html>

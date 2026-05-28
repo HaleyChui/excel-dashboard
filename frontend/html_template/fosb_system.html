@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>晶舟庫存記錄管理系統</title>
+<link rel="stylesheet" href="lib/tabler-icons.min.css">
+<script src="lib/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F7FA;--bg2:#FFFFFF;--bg3:#EEF1F5;--bg4:#E3E8EF;
+  --border:#DDE3EC;--border2:#C8D0DC;
+  --text:#1A2033;--text2:#5A657A;--text3:#9BA8BC;
+  --green:#0D9E6E;--green-bg:#E3F7F0;--green-dark:#0A7A56;
+  --red:#E03E3E;--red-bg:#FDECEC;--red-dark:#B52E2E;
+  --amber:#D4800A;--amber-bg:#FEF3E2;--amber-dark:#A86008;
+  --blue:#1A6FC4;--blue-bg:#E8F1FB;--blue-dark:#145699;
+  --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --font:'Noto Sans TC',sans-serif;--mono:'JetBrains Mono',monospace;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);
+}
+body{font-family:var(--font);font-size:13px;background:var(--bg);color:var(--text);min-height:100vh}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:216px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;box-shadow:2px 0 8px rgba(0,0,0,.03)}
+.slogo{padding:20px 16px 14px;border-bottom:1px solid var(--border)}
+.slogo-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:-.2px}
+.slogo-name i{font-size:20px;color:var(--green);background:var(--green-bg);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.slogo-sub{font-size:11px;color:var(--text3);margin-top:4px;padding-left:41px}
+.snav{padding:10px 8px;flex:1;overflow-y:auto}
+.snav-label{font-size:10px;color:var(--text3);padding:0 8px;margin:10px 0 4px;letter-spacing:.08em;font-weight:700;text-transform:uppercase;display:block}
+.snav-label:first-child{margin-top:2px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:12.5px;color:var(--text2);transition:all .15s;user-select:none;position:relative}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:var(--green-bg);color:var(--green-dark);font-weight:700}
+.ni.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--green);border-radius:0 2px 2px 0}
+.ni i{font-size:16px;width:20px;text-align:center}
+.nbadge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--green-bg);color:var(--green);font-weight:700;min-width:20px;text-align:center}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.tb-right{display:flex;gap:10px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+.page{display:none}.page.active{display:block}
+
+/* ── Metric cards ── */
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.mc-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.mc-val{font-size:26px;font-weight:700;letter-spacing:-.5px;color:var(--text)}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
+.card-hd{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:linear-gradient(to bottom,var(--bg2),var(--bg3))}
+.card-hd-l{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:-.1px}
+.card-hd-l i{color:var(--green)}
+
+/* ── Buttons ── */
+.btn{font-size:12px;padding:7px 14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s;font-family:var(--font);font-weight:500}
+.btn:hover{background:var(--bg3);border-color:var(--border2)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 2px 6px rgba(13,158,110,.25)}
+.btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.btn-danger{background:var(--red-bg);color:var(--red-dark);border-color:#f5c0c0}
+.btn-danger:hover{background:#f9d5d5}
+.btn-amber{background:var(--amber-bg);color:var(--amber-dark);border-color:#f0d090}
+.btn-amber:hover{background:#fde9c0}
+.btn-sm{padding:4px 9px;font-size:11px}
+
+/* ── Forms ── */
+select,input[type=text],input[type=date],input[type=number],input[type=month],textarea{
+  font-size:12px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--bg2);color:var(--text);outline:none;font-family:var(--font);
+  transition:border-color .15s,box-shadow .15s}
+select:focus,input:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(13,158,110,.12)}
+textarea{resize:vertical;min-height:60px;width:100%}
+input.inline-edit{width:80px;padding:4px 7px;text-align:right;font-family:var(--mono)}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:11px;color:var(--text3);font-weight:700;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em;text-transform:uppercase}
+td{font-size:12.5px;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F8FAFC}
+
+/* ── Badges ── */
+.badge{font-size:10.5px;padding:3px 8px;border-radius:20px;font-weight:700;white-space:nowrap;letter-spacing:.02em}
+.bg-green{background:var(--green-bg);color:var(--green-dark)}
+.bg-red{background:var(--red-bg);color:var(--red-dark)}
+.bg-amber{background:var(--amber-bg);color:var(--amber-dark)}
+.bg-blue{background:var(--blue-bg);color:var(--blue-dark)}
+.bg-gray{background:var(--bg3);color:var(--text2)}
+.stock-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+
+/* ── Modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,20,35,.5);z-index:100;align-items:flex-start;justify-content:center;padding-top:48px;backdrop-filter:blur(3px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.modal-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-hd-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.modal-body{padding:20px}
+.form-row{margin-bottom:13px}
+.form-label{font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:700;letter-spacing:.04em;display:block;text-transform:uppercase}
+.form-row select,.form-row input,.form-row textarea{width:100%}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;bottom:0;background:var(--bg2)}
+
+/* ── Alerts & banners ── */
+.alert-strip{background:var(--amber-bg);border:1px solid #f0d090;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--amber-dark);display:none;align-items:center;gap:8px;font-weight:500}
+.alert-strip.show{display:flex}
+.info-banner{background:var(--blue-bg);border:1px solid #b5d4f4;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--blue-dark);display:flex;align-items:flex-start;gap:8px;line-height:1.7}
+.stock-preview-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:11px 18px;border-radius:var(--radius);font-size:12.5px;z-index:300;opacity:0;transition:all .3s;pointer-events:none;transform:translateY(8px);box-shadow:var(--shadow-lg);font-weight:500}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:48px;color:var(--text3);font-size:12px}
+.empty i{font-size:32px;display:block;margin-bottom:10px;color:var(--border2)}
+
+/* ── Misc ── */
+.mono{font-family:var(--mono);font-size:11.5px;color:var(--text2)}
+kbd{background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;border:1px solid var(--border2);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<!-- 報表中心返回列 -->
+<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-bottom:2px solid #22d3ee;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-family:'Microsoft JhengHei',Arial,sans-serif">
+  <div style="display:inline-flex;gap:8px;align-items:center">
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;color:#6ee7b7;text-decoration:none;font-size:13px;font-weight:700;padding:6px 14px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:8px;transition:all .2s" onmouseover="this.style.background='rgba(16,185,129,0.25)';this.style.transform='translateX(-2px)'" onmouseout="this.style.background='rgba(16,185,129,0.15)';this.style.transform='translateX(0)'">
+      <span style="font-size:16px">⌂</span><span>回首頁</span>
+    </a>
+    <a href="1425_dashboard.html" style="display:inline-flex;align-items:center;gap:8px;color:#67e8f9;text-decoration:none;font-size:13px;font-weight:700;padding:6px 14px;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.4);border-radius:8px;transition:all .2s" onmouseover="this.style.background='rgba(34,211,238,0.25)';this.style.transform='translateX(-2px)'" onmouseout="this.style.background='rgba(34,211,238,0.15)';this.style.transform='translateX(0)'">
+      <span style="font-size:16px">📊</span><span>報表中心</span>
+    </a>
+  </div>
+  <div style="color:#94a3b8;font-size:12px;letter-spacing:1px">
+    <span style="color:#67e8f9;font-weight:700">📦 晶舟盒清潔管理</span>
+    <span style="margin:0 8px;color:#475569">●</span>
+    <span>FOUP Cleaning Management</span>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="slogo">
+    <div class="slogo-name"><i class="ti ti-clipboard-list" aria-hidden="true"></i>晶舟記錄系統</div>
+    <div class="slogo-sub">1425 物料管理</div>
+  </div>
+  <div class="snav">
+    <span class="snav-label">記錄管理</span>
+    <div class="ni active" onclick="showPage('overview',this)"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>總覽</div>
+    <div class="ni" onclick="showPage('stock',this)"><i class="ti ti-stack" aria-hidden="true"></i>即時庫存</div>
+    <div class="ni" onclick="showPage('inbound',this)"><i class="ti ti-package-import" aria-hidden="true"></i>入庫記錄 <span class="nbadge" id="nb-in">0</span></div>
+    <div class="ni" onclick="showPage('outbound',this)"><i class="ti ti-package-export" aria-hidden="true"></i>出庫記錄 <span class="nbadge" id="nb-out">0</span></div>
+    <div class="ni" onclick="showPage('cleaning',this)"><i class="ti ti-wash" aria-hidden="true"></i>清潔/維護 <span class="nbadge" id="nb-clean">0</span></div>
+    <div class="ni" onclick="showPage('stocktake',this)"><i class="ti ti-clipboard-check" aria-hidden="true"></i>庫存盤點 <span class="nbadge" id="nb-st">0</span></div>
+    <span class="snav-label">設定</span>
+    <div class="ni" onclick="showPage('base',this)"><i class="ti ti-database" aria-hidden="true"></i>期初庫存設定</div>
+    <div class="ni" onclick="showPage('safestock',this)"><i class="ti ti-shield-check" aria-hidden="true"></i>安全庫存設定</div>
+    <span class="snav-label">工具</span>
+    <div class="ni" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>匯出 Excel</div>
+    <div class="ni" onclick="clearRecords()"><i class="ti ti-trash" aria-hidden="true"></i>清除記錄</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title" id="page-title">總覽</div>
+    <div class="tb-right">
+      <select id="filter-item" onchange="renderAll()" style="max-width:200px">
+        <option value="">全部品項</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal()" id="add-rec-btn"><i class="ti ti-plus" aria-hidden="true"></i>新增記錄</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Overview -->
+    <div id="page-overview" class="page active">
+      <div class="mrow">
+        <div class="mc"><div class="mc-label">入庫筆數</div><div class="mc-val" id="ov-in">0</div><div class="mc-sub">累計記錄</div></div>
+        <div class="mc"><div class="mc-label">出庫筆數</div><div class="mc-val" id="ov-out">0</div><div class="mc-sub">累計記錄</div></div>
+        <div class="mc"><div class="mc-label">清潔/維護</div><div class="mc-val" id="ov-clean">0</div><div class="mc-sub">累計記錄</div></div>
+        <div class="mc"><div class="mc-label">庫存盤點</div><div class="mc-val" id="ov-st">0</div><div class="mc-sub">累計記錄</div></div>
+      </div>
+      <div id="low-stock-alert" class="alert-strip"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span id="low-stock-msg"></span></div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-history" aria-hidden="true"></i>最近記錄</div>
+          <input type="text" placeholder="搜尋料號、品名、操作人員..." id="ov-search" oninput="renderOverview()" style="width:220px">
+        </div>
+        <div class="table-wrap" id="ov-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Live Stock -->
+    <div id="page-stock" class="page">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-stack" aria-hidden="true"></i>即時庫存（自動計算）</div>
+          <select id="stock-size-f" onchange="renderStockPage()">
+            <option value="">全部尺寸</option><option value="8">8 吋</option><option value="12">12 吋</option>
+          </select>
+        </div>
+        <div class="table-wrap" id="stock-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Base Stock -->
+    <div id="page-base" class="page">
+      <div class="info-banner"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:2px" aria-hidden="true"></i><div>期初庫存為計算即時庫存的基準值。修改並儲存後，所有庫存數值將立即重新計算。資料儲存於瀏覽器本地端（localStorage）。</div></div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-database" aria-hidden="true"></i>期初庫存設定</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="resetBase()"><i class="ti ti-refresh" aria-hidden="true"></i>還原預設值</button>
+            <button class="btn btn-primary" onclick="saveBase()"><i class="ti ti-check" aria-hidden="true"></i>儲存所有變更</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="base-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Safe Stock -->
+    <div id="page-safestock" class="page">
+      <div class="info-banner"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:2px" aria-hidden="true"></i><div>安全庫存預設以「上個月平均日領用量 × 14 天」自動計算。可切換為手動模式覆蓋個別品項的安全庫存值。<br><strong>公式：</strong>上月出庫量 ÷ 天數 × 14</div></div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-shield-check" aria-hidden="true"></i>安全庫存設定</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;gap:7px;align-items:center">
+              <span style="font-size:11px;color:var(--text2);font-weight:600">計算基準月份</span>
+              <input type="month" id="safe-ref-month" onchange="renderSafePage()" style="padding:5px 9px">
+            </div>
+            <button class="btn btn-amber" onclick="applyAutoAll()"><i class="ti ti-calculator" aria-hidden="true"></i>全部套用自動計算</button>
+            <button class="btn btn-primary" onclick="saveSafe()"><i class="ti ti-check" aria-hidden="true"></i>儲存所有變更</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="safe-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Inbound -->
+    <div id="page-inbound" class="page">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-package-import" aria-hidden="true"></i>入庫記錄</div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <input type="date" id="in-f" onchange="renderInbound()"><span style="font-size:12px;color:var(--text3)">至</span><input type="date" id="in-t" onchange="renderInbound()">
+          </div>
+        </div>
+        <div class="table-wrap" id="in-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Outbound -->
+    <div id="page-outbound" class="page">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><i class="ti ti-package-export" aria-hidden="true"></i>出庫記錄</div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <input type="date" id="out-f" onchange="renderOutbound()"><span style="font-size:12px;color:var(--text3)">至</span><input type="date" id="out-t" onchange="renderOutbound()">
+          </div>
+        </div>
+        <div class="table-wrap" id="out-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Cleaning -->
+    <div id="page-cleaning" class="page">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><i class="ti ti-wash" aria-hidden="true"></i>清潔/維護記錄</div></div>
+        <div class="table-wrap" id="clean-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Stocktake -->
+    <div id="page-stocktake" class="page">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><i class="ti ti-clipboard-check" aria-hidden="true"></i>庫存盤點記錄</div></div>
+        <div class="table-wrap" id="st-table-wrap"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-hd">
+      <div class="modal-hd-title" id="modal-title">新增記錄</div>
+      <button class="btn btn-sm" onclick="closeModal()" aria-label="關閉"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label" for="f-type">記錄類型</label>
+        <select id="f-type" onchange="onTypeChange()">
+          <option value="inbound">📥 入庫</option>
+          <option value="outbound">📤 出庫</option>
+          <option value="cleaning">🧹 清潔/維護</option>
+          <option value="stocktake">📋 庫存盤點</option>
+        </select>
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label class="form-label" for="f-date">日期</label><input type="date" id="f-date"></div>
+        <div class="form-row"><label class="form-label" for="f-item">料號</label><select id="f-item" onchange="onItemChange()"></select></div>
+      </div>
+      <div class="stock-preview-box">
+        <span style="font-size:12px;color:var(--text2);font-weight:600">目前庫存</span>
+        <span id="f-current-stock" style="font-size:18px;font-weight:700;font-family:var(--mono)">— 件</span>
+      </div>
+      <div class="form-2col" id="f-qty-wrap">
+        <div class="form-row"><label class="form-label" id="f-qty-label" for="f-qty">數量</label><input type="number" id="f-qty" min="0" placeholder="0" oninput="onQtyChange()"></div>
+        <div class="form-row" id="f-after-wrap"><label class="form-label">操作後庫存</label><input type="number" id="f-after" readonly style="background:var(--bg3);color:var(--text2)"></div>
+      </div>
+      <div class="form-row" id="f-actual-wrap" style="display:none"><label class="form-label" for="f-actual">實際盤點數量</label><input type="number" id="f-actual" min="0" placeholder="0" oninput="onActualChange()"></div>
+      <div class="form-row" id="f-diff-wrap" style="display:none"><label class="form-label">盤點差異</label><input type="text" id="f-diff" readonly style="background:var(--bg3);font-family:var(--mono);font-weight:600"></div>
+      <div class="form-row" id="f-adjust-wrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:500">
+          <input type="checkbox" id="f-adjust" onchange="onAdjustChange()">盤點後自動校正庫存至實際數量
+        </label>
+      </div>
+      <div class="form-row" id="f-clean-type-wrap" style="display:none"><label class="form-label" for="f-clean-type">維護類型</label>
+        <select id="f-clean-type"><option>一般清潔</option><option>深度清潔</option><option>定期維護</option><option>異常處理</option></select>
+      </div>
+      <div class="form-row" id="f-supplier-wrap"><label class="form-label" id="f-supplier-label" for="f-supplier">供應商/客戶</label><input type="text" id="f-supplier" placeholder="輸入名稱"></div>
+      <div class="form-row"><label class="form-label" for="f-operator">操作人員</label><input type="text" id="f-operator" placeholder="輸入姓名"></div>
+      <div class="form-row"><label class="form-label" for="f-note">備註</label><textarea id="f-note" placeholder="選填備註..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <div id="f-warn" style="font-size:11.5px;color:var(--red-dark);font-weight:500"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveRecord()"><i class="ti ti-check" aria-hidden="true"></i>儲存記錄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const ITEMS=[
+  {id:'1010CS005A',   name:'CCP2 8" 晶舟盒',          size:'8"'},
+  {id:'1010CS005A-WS',name:'8" 全乳晶舟盒(WS)',        size:'8"'},
+  {id:'1010CS010A',   name:'8" 半乳晶舟盒',            size:'8"'},
+  {id:'1010CS017A',   name:'AW 8" 圓盒',              size:'8"'},
+  {id:'1010CS029A',   name:'AW 12" 四扣晶舟盒',        size:'12"'},
+  {id:'1010CS035A',   name:'晶豪 12" AUTO 晶舟盒',     size:'12"'},
+  {id:'1010CS036A',   name:'矽成 12" AUTO 晶舟盒',     size:'12"'},
+  {id:'1010CS022A',   name:'OTHER 客戶 12" AUTO',      size:'12"'},
+  {id:'1010CS006A',   name:'CCP2 12" 晶舟盒',          size:'12"'},
+  {id:'1010CS030A',   name:'AB 出貨用 AUTO',            size:'12"'},
+  {id:'1010CS028A',   name:'AB 出貨用 AUTO（客供）',    size:'12"'},
+  {id:'1010CS037A',   name:'AB AUTO 拆批用',            size:'12"'},
+  {id:'1010CS041A',   name:'IR 12" AUTO 晶舟盒',        size:'12"'},
+];
+const DEFAULT_BASE={
+  '1010CS005A':96,'1010CS005A-WS':384,'1010CS010A':269,'1010CS017A':391,
+  '1010CS029A':488,'1010CS035A':655,'1010CS036A':710,'1010CS022A':90,
+  '1010CS006A':216,'1010CS030A':1121,'1010CS028A':285,'1010CS037A':108,'1010CS041A':196
+};
+const DEFAULT_SAFE={
+  '1010CS005A':800,'1010CS005A-WS':800,'1010CS010A':300,'1010CS017A':300,
+  '1010CS029A':800,'1010CS035A':800,'1010CS036A':800,'1010CS022A':200,
+  '1010CS006A':300,'1010CS030A':800,'1010CS028A':300,'1010CS037A':150,'1010CS041A':150
+};
+const LS_REC='wc_rec_v5',LS_BASE='wc_base_v5',LS_SAFE='wc_safe_v5';
+
+let records=[],baseStock={},safeConfig={};
+
+function ls(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+function loadData(){
+  records=ls(LS_REC)||[];
+  baseStock={...DEFAULT_BASE,...(ls(LS_BASE)||{})};
+  const sc=ls(LS_SAFE)||{};
+  ITEMS.forEach(i=>{ safeConfig[i.id]=sc[i.id]||{mode:'auto',manual:DEFAULT_SAFE[i.id]||0}; });
+}
+function saveRec(){lsSet(LS_REC,records)}
+function saveBase(){lsSet(LS_BASE,baseStock)}
+function saveSafeConf(){lsSet(LS_SAFE,safeConfig)}
+
+function itemObj(id){return ITEMS.find(x=>x.id===id)||{}}
+function itemName(id){return itemObj(id).name||id}
+function today(){return new Date().toISOString().slice(0,10)}
+
+function prevMonthRange(){
+  const d=new Date();
+  const m=d.getMonth()||12, y=d.getMonth()?d.getFullYear():d.getFullYear()-1;
+  const days=new Date(y,m,0).getDate();
+  return{from:`${y}-${String(m).padStart(2,'0')}-01`,to:`${y}-${String(m).padStart(2,'0')}-${days}`,days};
+}
+function refMonthRange(){
+  const v=document.getElementById('safe-ref-month')?.value;
+  if(v){
+    const [y,m]=v.split('-').map(Number);
+    const days=new Date(y,m,0).getDate();
+    return{from:`${y}-${String(m).padStart(2,'0')}-01`,to:`${y}-${String(m).padStart(2,'0')}-${days}`,days};
+  }
+  return prevMonthRange();
+}
+
+function calcAutoSafe(id,range){
+  const r=range||prevMonthRange();
+  const qty=records.filter(x=>x.item===id&&x.type==='outbound'&&x.date>=r.from&&x.date<=r.to).reduce((s,x)=>s+(x.qty||0),0);
+  const auto=Math.ceil(qty/r.days*14);
+  return auto>0?auto:(DEFAULT_SAFE[id]||0);
+}
+function getSafe(id){
+  const c=safeConfig[id]||{mode:'auto'};
+  if(c.mode==='manual') return c.manual||0;
+  return calcAutoSafe(id);
+}
+function calcStock(id){
+  let s=baseStock[id]||0;
+  [...records].filter(r=>r.item===id).sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||'').localeCompare(b.createdAt||'')).forEach(r=>{
+    if(r.type==='inbound') s+=r.qty||0;
+    else if(r.type==='outbound') s-=r.qty||0;
+    else if(r.type==='stocktake'&&r.adjusted) s=r.actualQty;
+  });
+  return Math.max(0,s);
+}
+
+function populateItemSelects(){
+  const fi=document.getElementById('filter-item').value;
+  ['filter-item','f-item'].forEach(sid=>{
+    const el=document.getElementById(sid);if(!el)return;
+    const blank=sid==='filter-item'?'<option value="">全部品項</option>':'';
+    el.innerHTML=blank+ITEMS.map(i=>`<option value="${i.id}">${i.id} — ${i.name}</option>`).join('');
+  });
+  if(fi) document.getElementById('filter-item').value=fi;
+}
+
+function getFI(){return document.getElementById('filter-item').value}
+function filteredRec(){const fi=getFI();return fi?records.filter(r=>r.item===fi):records}
+
+function showPage(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el)el.classList.add('active');
+  const titles={overview:'總覽',stock:'即時庫存',base:'期初庫存設定',safestock:'安全庫存設定',inbound:'入庫記錄',outbound:'出庫記錄',cleaning:'清潔/維護記錄',stocktake:'庫存盤點記錄'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  document.getElementById('add-rec-btn').style.display=['base','safestock'].includes(page)?'none':'';
+  if(page==='safestock'){
+    const pm=prevMonthRange();const el2=document.getElementById('safe-ref-month');
+    if(!el2.value) el2.value=pm.from.slice(0,7);
+    renderSafePage();
+  }
+  if(page==='base') renderBasePage();
+}
+
+function renderAll(){
+  updateBadges();renderOverview();renderStockPage();renderInbound();renderOutbound();renderCleaning();renderStocktake();checkLowStock();
+}
+
+function updateBadges(){
+  const fr=filteredRec();
+  const counts={inbound:0,outbound:0,cleaning:0,stocktake:0};
+  fr.forEach(r=>counts[r.type]=(counts[r.type]||0)+1);
+  document.getElementById('nb-in').textContent=counts.inbound;
+  document.getElementById('nb-out').textContent=counts.outbound;
+  document.getElementById('nb-clean').textContent=counts.cleaning;
+  document.getElementById('nb-st').textContent=counts.stocktake;
+  document.getElementById('ov-in').textContent=counts.inbound;
+  document.getElementById('ov-out').textContent=counts.outbound;
+  document.getElementById('ov-clean').textContent=counts.cleaning;
+  document.getElementById('ov-st').textContent=counts.stocktake;
+}
+
+function checkLowStock(){
+  const low=ITEMS.filter(i=>calcStock(i.id)<getSafe(i.id));
+  const el=document.getElementById('low-stock-alert');
+  if(low.length){
+    el.classList.add('show');
+    document.getElementById('low-stock-msg').textContent=`${low.length} 個品項低於安全庫存：${low.slice(0,3).map(i=>i.id).join('、')}${low.length>3?'…':''}`;
+  }else el.classList.remove('show');
+}
+
+function badge(type){
+  const m={inbound:['入庫','bg-green'],outbound:['出庫','bg-red'],cleaning:['清潔/維護','bg-blue'],stocktake:['庫存盤點','bg-amber']};
+  const [l,c]=m[type]||[type,'bg-gray'];
+  return`<span class="badge ${c}">${l}</span>`;
+}
+function stockPill(s,safe){
+  if(s<safe*0.4)return`<span class="stock-pill" style="background:var(--red-bg);color:var(--red-dark)"><i class="ti ti-alert-circle" style="font-size:13px" aria-hidden="true"></i>${s}</span>`;
+  if(s<safe)return`<span class="stock-pill" style="background:var(--amber-bg);color:var(--amber-dark)"><i class="ti ti-alert-triangle" style="font-size:13px" aria-hidden="true"></i>${s}</span>`;
+  return`<span class="stock-pill" style="background:var(--green-bg);color:var(--green-dark)">${s}</span>`;
+}
+function delBtn(id){return`<button class="btn btn-danger btn-sm" onclick="deleteRecord('${id}')" title="刪除此筆記錄" aria-label="刪除"><i class="ti ti-trash" aria-hidden="true"></i></button>`}
+function emptyMsg(){return'<div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i><div>尚無記錄</div></div>'}
+function makeTable(data,cols){
+  if(!data.length)return emptyMsg();
+  return`<table><thead><tr>${cols.map(c=>`<th style="width:${c.w||'auto'}">${c.l}</th>`).join('')}<th style="width:46px"></th></tr></thead>
+  <tbody>${data.map(r=>`<tr>${cols.map(c=>`<td title="${String(c.fn(r)).replace(/<[^>]*>/g,'')}">${c.fn(r)}</td>`).join('')}<td>${delBtn(r.id)}</td></tr>`).join('')}</tbody></table>`;
+}
+function filterByDate(arr,fid,tid){
+  const f=document.getElementById(fid)?.value,t=document.getElementById(tid)?.value;
+  return arr.filter(r=>(!f||r.date>=f)&&(!t||r.date<=t));
+}
+
+function renderOverview(){
+  const q=(document.getElementById('ov-search').value||'').toLowerCase();
+  let data=[...filteredRec()].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,40);
+  if(q)data=data.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  const w=document.getElementById('ov-table-wrap');
+  if(!data.length){w.innerHTML=emptyMsg();return}
+  w.innerHTML=`<table><thead><tr>
+    <th style="width:92px">日期</th><th style="width:84px">類型</th><th style="width:116px">料號</th>
+    <th>品名</th><th style="width:68px">數量</th><th style="width:90px">操作後庫存</th><th style="width:76px">操作人員</th><th style="width:46px"></th>
+  </tr></thead>
+  <tbody>${data.map(r=>{
+    const safe=getSafe(r.item);
+    const after=r.stockAfter!=null?stockPill(r.stockAfter,safe):'-';
+    const qs=r.type==='outbound'?`<span style="color:var(--red-dark);font-weight:700;font-family:var(--mono)">-${r.qty||0}</span>`:r.type==='inbound'?`<span style="color:var(--green-dark);font-weight:700;font-family:var(--mono)">+${r.qty||0}</span>`:`<span style="font-family:var(--mono)">${r.qty||r.actualQty||'-'}</span>`;
+    return`<tr><td>${r.date}</td><td>${badge(r.type)}</td><td class="mono">${r.item}</td><td>${itemName(r.item)}</td><td>${qs}</td><td>${after}</td><td>${r.operator||'—'}</td><td>${delBtn(r.id)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function renderStockPage(){
+  const sf=document.getElementById('stock-size-f').value;
+  const fi=getFI();
+  let show=sf?ITEMS.filter(i=>i.size.includes(sf)):ITEMS;
+  if(fi)show=show.filter(i=>i.id===fi);
+  const w=document.getElementById('stock-table-wrap');
+  if(!show.length){w.innerHTML=emptyMsg();return}
+  w.innerHTML=`<table><thead><tr>
+    <th style="width:116px">料號</th><th>品名</th><th style="width:50px">尺寸</th>
+    <th style="width:76px">期初庫存</th><th style="width:76px">入庫合計</th><th style="width:76px">出庫合計</th>
+    <th style="width:94px">即時庫存</th><th style="width:80px">安全庫存</th><th style="width:58px">模式</th><th style="width:64px">狀態</th>
+  </tr></thead>
+  <tbody>${show.map(item=>{
+    const cur=calcStock(item.id),safe=getSafe(item.id);
+    const inS=records.filter(r=>r.item===item.id&&r.type==='inbound').reduce((s,r)=>s+(r.qty||0),0);
+    const outS=records.filter(r=>r.item===item.id&&r.type==='outbound').reduce((s,r)=>s+(r.qty||0),0);
+    const cfg=safeConfig[item.id]||{mode:'auto'};
+    const modeBadge=cfg.mode==='manual'?'<span class="badge bg-amber">手動</span>':'<span class="badge bg-green">自動</span>';
+    const stBadge=cur<safe*0.4?'<span class="badge bg-red">危險</span>':cur<safe?'<span class="badge bg-amber">警示</span>':'<span class="badge bg-green">正常</span>';
+    return`<tr><td class="mono">${item.id}</td><td>${item.name}</td><td style="color:var(--text3)">${item.size}</td>
+      <td style="color:var(--text2);font-family:var(--mono)">${baseStock[item.id]||0}</td>
+      <td style="color:var(--green-dark);font-weight:700;font-family:var(--mono)">+${inS}</td>
+      <td style="color:var(--red-dark);font-weight:700;font-family:var(--mono)">-${outS}</td>
+      <td>${stockPill(cur,safe)}</td><td style="font-weight:700;font-family:var(--mono)">${safe}</td>
+      <td>${modeBadge}</td><td>${stBadge}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function renderBasePage(){
+  const w=document.getElementById('base-table-wrap');
+  w.innerHTML=`<table><thead><tr>
+    <th style="width:116px">料號</th><th>品名</th><th style="width:50px">尺寸</th>
+    <th style="width:140px">期初庫存</th><th style="width:94px">即時庫存</th><th>說明</th>
+  </tr></thead>
+  <tbody>${ITEMS.map(item=>{
+    const k=item.id.replace(/[^a-z0-9]/gi,'_');
+    const cur=calcStock(item.id);
+    return`<tr><td class="mono">${item.id}</td><td>${item.name}</td><td style="color:var(--text3)">${item.size}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <input type="number" class="inline-edit" id="base-input-${k}" value="${baseStock[item.id]||0}" min="0" oninput="previewBase('${item.id}')">
+        <span id="base-arrow-${k}" style="font-size:11px;font-weight:700;font-family:var(--mono)"></span>
+      </div></td>
+      <td>${stockPill(cur,getSafe(item.id))}</td>
+      <td style="font-size:11.5px;color:var(--text3)">系統起始庫存，不含後續入出庫記錄</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function previewBase(id){
+  const k=id.replace(/[^a-z0-9]/gi,'_');
+  const v=parseInt(document.getElementById('base-input-'+k).value)||0;
+  const old=DEFAULT_BASE[id]||0;
+  const arrow=document.getElementById('base-arrow-'+k);
+  if(v!==old){arrow.textContent=v>old?`↑+${v-old}`:`↓${v-old}`;arrow.style.color=v>old?'var(--green)':'var(--red)';}
+  else arrow.textContent='';
+}
+function saveBase(){
+  ITEMS.forEach(item=>{
+    const k=item.id.replace(/[^a-z0-9]/gi,'_');
+    const el=document.getElementById('base-input-'+k);
+    if(el)baseStock[item.id]=parseInt(el.value)||0;
+  });
+  saveBase_data();renderAll();renderBasePage();showToast('期初庫存已儲存，庫存數值已重新計算');
+}
+function saveBase_data(){lsSet(LS_BASE,baseStock)}
+function resetBase(){
+  if(!confirm('確定還原所有期初庫存為預設值？'))return;
+  baseStock={...DEFAULT_BASE};lsSet(LS_BASE,baseStock);renderBasePage();renderAll();showToast('已還原預設期初庫存');
+}
+
+function renderSafePage(){
+  const range=refMonthRange();
+  const w=document.getElementById('safe-table-wrap');
+  w.innerHTML=`<table><thead><tr>
+    <th style="width:116px">料號</th><th>品名</th><th style="width:50px">尺寸</th>
+    <th style="width:80px">出庫量</th><th style="width:76px">日均用量</th>
+    <th style="width:104px">自動值 ×14</th>
+    <th style="width:96px">模式</th><th style="width:110px">安全庫存</th><th style="width:80px">生效值</th>
+  </tr></thead>
+  <tbody>${ITEMS.map(item=>{
+    const k=item.id.replace(/[^a-z0-9]/gi,'_');
+    const outQty=records.filter(r=>r.item===item.id&&r.type==='outbound'&&r.date>=range.from&&r.date<=range.to).reduce((s,r)=>s+(r.qty||0),0);
+    const avg=(outQty/range.days).toFixed(2);
+    const autoVal=Math.ceil(parseFloat(avg)*14)||DEFAULT_SAFE[item.id]||0;
+    const cfg=safeConfig[item.id]||{mode:'auto',manual:DEFAULT_SAFE[item.id]||0};
+    const isM=cfg.mode==='manual';
+    const effective=isM?cfg.manual:autoVal;
+    return`<tr><td class="mono">${item.id}</td><td>${item.name}</td><td style="color:var(--text3)">${item.size}</td>
+      <td style="font-family:var(--mono)">${outQty}</td>
+      <td style="font-family:var(--mono);color:var(--text2)">${avg}</td>
+      <td style="color:var(--blue-dark);font-weight:700;font-family:var(--mono)">${autoVal}</td>
+      <td><select id="safe-mode-${k}" onchange="onSafeModeChange('${item.id}')" style="font-size:11px;padding:4px 7px">
+        <option value="auto" ${!isM?'selected':''}>自動計算</option>
+        <option value="manual" ${isM?'selected':''}>手動設定</option>
+      </select></td>
+      <td><input type="number" class="inline-edit" id="safe-input-${k}" value="${isM?cfg.manual:autoVal}" min="0"
+        ${!isM?'disabled style="background:var(--bg3);color:var(--text3);width:80px"':'style="width:80px"'}
+        oninput="previewSafe('${item.id}')"></td>
+      <td id="safe-eff-${k}" style="font-weight:700;font-family:var(--mono)">${effective}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+function onSafeModeChange(id){
+  const k=id.replace(/[^a-z0-9]/gi,'_');
+  const mode=document.getElementById('safe-mode-'+k).value;
+  const input=document.getElementById('safe-input-'+k);
+  const range=refMonthRange();
+  const outQty=records.filter(r=>r.item===id&&r.type==='outbound'&&r.date>=range.from&&r.date<=range.to).reduce((s,r)=>s+(r.qty||0),0);
+  const autoVal=Math.ceil(outQty/range.days*14)||DEFAULT_SAFE[id]||0;
+  if(mode==='auto'){input.disabled=true;input.style.background='var(--bg3)';input.style.color='var(--text3)';input.value=autoVal;}
+  else{input.disabled=false;input.style.background='';input.style.color='';input.value=safeConfig[id]?.manual||autoVal;}
+  previewSafe(id);
+}
+function previewSafe(id){
+  const k=id.replace(/[^a-z0-9]/gi,'_');
+  const val=parseInt(document.getElementById('safe-input-'+k).value)||0;
+  document.getElementById('safe-eff-'+k).textContent=val;
+}
+function saveSafe(){
+  ITEMS.forEach(item=>{
+    const k=item.id.replace(/[^a-z0-9]/gi,'_');
+    const mEl=document.getElementById('safe-mode-'+k);const iEl=document.getElementById('safe-input-'+k);
+    if(!mEl||!iEl)return;
+    safeConfig[item.id]={mode:mEl.value,manual:parseInt(iEl.value)||0};
+  });
+  saveSafeConf();renderAll();showToast('安全庫存設定已儲存');
+}
+function applyAutoAll(){
+  ITEMS.forEach(item=>{
+    const k=item.id.replace(/[^a-z0-9]/gi,'_');
+    const mEl=document.getElementById('safe-mode-'+k);const iEl=document.getElementById('safe-input-'+k);
+    if(!mEl||!iEl)return;
+    const range=refMonthRange();
+    const outQty=records.filter(r=>r.item===item.id&&r.type==='outbound'&&r.date>=range.from&&r.date<=range.to).reduce((s,r)=>s+(r.qty||0),0);
+    const autoVal=Math.ceil(outQty/range.days*14)||DEFAULT_SAFE[item.id]||0;
+    mEl.value='auto';iEl.value=autoVal;iEl.disabled=true;iEl.style.background='var(--bg3)';iEl.style.color='var(--text3)';
+    previewSafe(item.id);
+  });
+  showToast('已全部切換為自動計算模式');
+}
+
+function renderInbound(){
+  const data=filterByDate(filteredRec().filter(r=>r.type==='inbound'),'in-f','in-t').sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('in-table-wrap').innerHTML=makeTable(data,[
+    {l:'日期',w:'92px',fn:r=>r.date},
+    {l:'料號',w:'116px',fn:r=>`<span class="mono">${r.item}</span>`},
+    {l:'品名',fn:r=>itemName(r.item)},
+    {l:'入庫量',w:'72px',fn:r=>`<span style="color:var(--green-dark);font-weight:700;font-family:var(--mono)">+${r.qty}</span>`},
+    {l:'操作後庫存',w:'90px',fn:r=>r.stockAfter!=null?stockPill(r.stockAfter,getSafe(r.item)):'-'},
+    {l:'供應商',w:'90px',fn:r=>r.supplier||'—'},{l:'操作人員',w:'76px',fn:r=>r.operator||'—'},
+    {l:'備註',w:'100px',fn:r=>`<span title="${r.note||''}">${(r.note||'').slice(0,14)||'—'}</span>`},
+  ]);
+}
+function renderOutbound(){
+  const data=filterByDate(filteredRec().filter(r=>r.type==='outbound'),'out-f','out-t').sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('out-table-wrap').innerHTML=makeTable(data,[
+    {l:'日期',w:'92px',fn:r=>r.date},
+    {l:'料號',w:'116px',fn:r=>`<span class="mono">${r.item}</span>`},
+    {l:'品名',fn:r=>itemName(r.item)},
+    {l:'出庫量',w:'72px',fn:r=>`<span style="color:var(--red-dark);font-weight:700;font-family:var(--mono)">-${r.qty}</span>`},
+    {l:'操作後庫存',w:'90px',fn:r=>r.stockAfter!=null?stockPill(r.stockAfter,getSafe(r.item)):'-'},
+    {l:'領用方',w:'90px',fn:r=>r.supplier||'—'},{l:'操作人員',w:'76px',fn:r=>r.operator||'—'},
+    {l:'備註',w:'100px',fn:r=>`<span title="${r.note||''}">${(r.note||'').slice(0,14)||'—'}</span>`},
+  ]);
+}
+function renderCleaning(){
+  const data=filteredRec().filter(r=>r.type==='cleaning').sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('clean-table-wrap').innerHTML=makeTable(data,[
+    {l:'日期',w:'92px',fn:r=>r.date},
+    {l:'料號',w:'116px',fn:r=>`<span class="mono">${r.item}</span>`},
+    {l:'品名',fn:r=>itemName(r.item)},
+    {l:'維護類型',w:'90px',fn:r=>r.cleanType||'—'},{l:'數量',w:'64px',fn:r=>r.qty||'—'},
+    {l:'操作人員',w:'76px',fn:r=>r.operator||'—'},
+    {l:'備註',w:'100px',fn:r=>`<span title="${r.note||''}">${(r.note||'').slice(0,14)||'—'}</span>`},
+  ]);
+}
+function renderStocktake(){
+  const data=filteredRec().filter(r=>r.type==='stocktake').sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('st-table-wrap').innerHTML=makeTable(data,[
+    {l:'日期',w:'92px',fn:r=>r.date},
+    {l:'料號',w:'116px',fn:r=>`<span class="mono">${r.item}</span>`},
+    {l:'品名',fn:r=>itemName(r.item)},
+    {l:'系統庫存',w:'76px',fn:r=>r.qty!=null?`<span style="font-family:var(--mono)">${r.qty}</span>`:'—'},
+    {l:'實際數量',w:'76px',fn:r=>r.actualQty!=null?`<span style="font-family:var(--mono)">${r.actualQty}</span>`:'—'},
+    {l:'差異',w:'60px',fn:r=>{const d=(r.actualQty||0)-(r.qty||0);return d>0?`<span style="color:var(--green-dark);font-family:var(--mono);font-weight:700">+${d}</span>`:d<0?`<span style="color:var(--red-dark);font-family:var(--mono);font-weight:700">${d}</span>`:'<span style="font-family:var(--mono)">0</span>'}},
+    {l:'已校正',w:'60px',fn:r=>r.adjusted?'<span class="badge bg-green">是</span>':'<span class="badge bg-gray">否</span>'},
+    {l:'操作人員',w:'76px',fn:r=>r.operator||'—'},
+  ]);
+}
+
+let curStock=0;
+function onTypeChange(){
+  const t=document.getElementById('f-type').value;
+  const isST=t==='stocktake',isC=t==='cleaning';
+  document.getElementById('f-clean-type-wrap').style.display=isC?'block':'none';
+  document.getElementById('f-supplier-wrap').style.display=(isC||isST)?'none':'block';
+  document.getElementById('f-supplier-label').textContent=t==='outbound'?'領用方':'供應商/客戶';
+  document.getElementById('f-qty-label').textContent=isST?'系統庫存（自動帶入）':'數量';
+  document.getElementById('f-after-wrap').style.display=isST?'none':'block';
+  document.getElementById('f-actual-wrap').style.display=isST?'block':'none';
+  document.getElementById('f-diff-wrap').style.display=isST?'block':'none';
+  document.getElementById('f-adjust-wrap').style.display=isST?'block':'none';
+  const qEl=document.getElementById('f-qty');
+  if(isST){qEl.value=curStock;qEl.readOnly=true;qEl.style.background='var(--bg3)';qEl.style.color='var(--text2)';onActualChange();}
+  else{qEl.readOnly=false;qEl.style.background='';qEl.style.color='';onQtyChange();}
+}
+function onItemChange(){
+  const id=document.getElementById('f-item').value;
+  curStock=calcStock(id);
+  document.getElementById('f-current-stock').textContent=curStock+' 件';
+  if(document.getElementById('f-type').value==='stocktake'){document.getElementById('f-qty').value=curStock;onActualChange();}
+  else onQtyChange();
+}
+function onQtyChange(){
+  const t=document.getElementById('f-type').value,id=document.getElementById('f-item').value;
+  const qty=parseInt(document.getElementById('f-qty').value)||0;
+  const after=t==='inbound'?curStock+qty:t==='outbound'?curStock-qty:curStock;
+  document.getElementById('f-after').value=after;
+  const warn=document.getElementById('f-warn');const safe=getSafe(id);
+  if(t==='outbound'&&after<0) warn.textContent='⚠ 庫存不足，操作後將為負數';
+  else if(t==='outbound'&&after<safe) warn.textContent=`注意：操作後庫存 ${after} 件，低於安全庫存 ${safe} 件`;
+  else warn.textContent='';
+}
+function onActualChange(){
+  const actual=parseInt(document.getElementById('f-actual').value)||0;
+  const sys=parseInt(document.getElementById('f-qty').value)||0;
+  const diff=actual-sys;
+  document.getElementById('f-diff').value=(diff>0?'+':'')+diff+' 件';
+  document.getElementById('f-diff').style.color=diff>0?'var(--green-dark)':diff<0?'var(--red-dark)':'var(--text2)';
+}
+function onAdjustChange(){
+  const adj=document.getElementById('f-adjust').checked;
+  const actual=parseInt(document.getElementById('f-actual').value)||0;
+  document.getElementById('f-warn').textContent=adj?`盤點後庫存將校正為 ${actual} 件`:'';
+}
+
+function openModal(){
+  ['f-qty','f-after','f-actual','f-supplier','f-operator','f-note','f-diff'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-type').value='inbound';
+  document.getElementById('f-date').value=today();
+  if(ITEMS.length) document.getElementById('f-item').value=ITEMS[0].id;
+  document.getElementById('f-adjust').checked=false;
+  document.getElementById('f-warn').textContent='';
+  onTypeChange();onItemChange();
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('f-date').focus();
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
+document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+function saveRecord(){
+  const type=document.getElementById('f-type').value;
+  const date=document.getElementById('f-date').value;
+  const item=document.getElementById('f-item').value;
+  const qty=parseInt(document.getElementById('f-qty').value)||0;
+  const actual=parseInt(document.getElementById('f-actual').value)||0;
+  const adjusted=document.getElementById('f-adjust').checked;
+  if(!date||!item){showToast('請填寫日期和料號');return}
+  if((type==='inbound'||type==='outbound')&&qty<=0){showToast('請輸入有效數量');return}
+  const cur=calcStock(item);
+  const stockAfter=type==='inbound'?cur+qty:type==='outbound'?cur-qty:type==='stocktake'&&adjusted?actual:cur;
+  records.unshift({
+    id:(Date.now()+Math.random()).toString(36),type,date,item,qty,
+    actualQty:type==='stocktake'?actual:undefined,
+    adjusted:type==='stocktake'?adjusted:undefined,
+    stockAfter,
+    supplier:document.getElementById('f-supplier').value,
+    operator:document.getElementById('f-operator').value,
+    note:document.getElementById('f-note').value,
+    cleanType:document.getElementById('f-clean-type').value,
+    createdAt:new Date().toISOString(),
+  });
+  saveRec();closeModal();renderAll();
+  const msgs={inbound:'✅ 入庫完成，庫存已增加',outbound:'✅ 出庫完成，庫存已扣除',cleaning:'✅ 清潔/維護記錄已儲存',stocktake:adjusted?'✅ 盤點完成，庫存已校正':'✅ 盤點記錄已儲存'};
+  showToast(msgs[type]||'記錄已儲存');
+}
+function deleteRecord(id){
+  if(!confirm('確定要刪除這筆記錄？\n刪除後庫存將自動回算。'))return;
+  records=records.filter(r=>r.id!==id);saveRec();renderAll();showToast('已刪除，庫存已重新計算');
+}
+function clearRecords(){
+  if(!confirm('確定清除所有記錄？\n期初庫存與安全庫存設定將保留。'))return;
+  records=[];saveRec();renderAll();showToast('所有記錄已清除');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function exportExcel(){
+  if(typeof XLSX==='undefined'){showToast('Excel 匯出套件載入中，請稍候再試');return}
+  const wb=XLSX.utils.book_new();
+  const pm=prevMonthRange();
+  const itemMap=Object.fromEntries(ITEMS.map(i=>[i.id,i.name]));
+  const typeMap={inbound:'入庫',outbound:'出庫',cleaning:'清潔/維護',stocktake:'庫存盤點'};
+
+  const stockRows=[['料號','品名','尺寸','期初庫存','入庫合計','出庫合計','即時庫存','安全庫存','模式','狀態'],
+    ...ITEMS.map(i=>{
+      const cur=calcStock(i.id),safe=getSafe(i.id);
+      const inS=records.filter(r=>r.item===i.id&&r.type==='inbound').reduce((s,r)=>s+(r.qty||0),0);
+      const outS=records.filter(r=>r.item===i.id&&r.type==='outbound').reduce((s,r)=>s+(r.qty||0),0);
+      const cfg=safeConfig[i.id]||{mode:'auto'};
+      return[i.id,i.name,i.size,baseStock[i.id]||0,inS,outS,cur,safe,cfg.mode==='manual'?'手動':'自動計算',cur<safe*0.4?'危險':cur<safe?'警示':'正常'];
+    })];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(stockRows),'即時庫存');
+
+  const safeRows=[['料號','品名','尺寸','上月出庫量','日均用量','自動計算值(×14)','模式','安全庫存'],
+    ...ITEMS.map(i=>{
+      const outQty=records.filter(r=>r.item===i.id&&r.type==='outbound'&&r.date>=pm.from&&r.date<=pm.to).reduce((s,r)=>s+(r.qty||0),0);
+      const avg=(outQty/pm.days).toFixed(2);const auto=Math.ceil(parseFloat(avg)*14)||DEFAULT_SAFE[i.id]||0;
+      const cfg=safeConfig[i.id]||{mode:'auto'};
+      return[i.id,i.name,i.size,outQty,avg,auto,cfg.mode==='manual'?'手動':'自動計算',getSafe(i.id)];
+    })];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(safeRows),'安全庫存設定');
+
+  const allRows=[['日期','類型','料號','品名','數量','操作後庫存','供應商/領用方','操作人員','備註'],
+    ...[...records].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>[r.date,typeMap[r.type]||r.type,r.item,itemMap[r.item]||r.item,r.qty||(r.actualQty||''),r.stockAfter!=null?r.stockAfter:'',r.supplier||'',r.operator||'',r.note||''])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(allRows),'全部記錄');
+
+  [['inbound','入庫'],['outbound','出庫'],['cleaning','清潔/維護'],['stocktake','庫存盤點']].forEach(([t,tname])=>{
+    const d=records.filter(r=>r.type===t);if(!d.length)return;
+    let rows;
+    if(t==='inbound') rows=[['日期','料號','品名','入庫量','操作後庫存','供應商','操作人員','備註'],...d.map(r=>[r.date,r.item,itemMap[r.item]||r.item,r.qty,r.stockAfter,r.supplier,r.operator,r.note])];
+    else if(t==='outbound') rows=[['日期','料號','品名','出庫量','操作後庫存','領用方','操作人員','備註'],...d.map(r=>[r.date,r.item,itemMap[r.item]||r.item,r.qty,r.stockAfter,r.supplier,r.operator,r.note])];
+    else if(t==='cleaning') rows=[['日期','料號','品名','維護類型','數量','操作人員','備註'],...d.map(r=>[r.date,r.item,itemMap[r.item]||r.item,r.cleanType,r.qty,r.operator,r.note])];
+    else rows=[['日期','料號','品名','系統庫存','實際數量','差異','已校正','操作人員','備註'],...d.map(r=>[r.date,r.item,itemMap[r.item]||r.item,r.qty,r.actualQty,(r.actualQty||0)-(r.qty||0),r.adjusted?'是':'否',r.operator,r.note])];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),tname);
+  });
+
+  const fname=`晶舟記錄_${today().replace(/-/g,'')}.xlsx`;
+  XLSX.writeFile(wb,fname);
+  showToast('✅ 已匯出 '+fname);
+}
+
+// Init
+loadData();
+populateItemSelects();
+renderAll();
+</script>
+</body>
+</html>

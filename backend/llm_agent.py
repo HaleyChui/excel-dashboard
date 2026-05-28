@@ -129,7 +129,12 @@ def generate_layout(suggestions, user_refinements='', sheet_data=None):
               f"## 圖表配置\n{json.dumps(suggestions, ensure_ascii=False, indent=2)}\n\n"
               f"## 實際資料\n{data_json}\n\n"
               f"## 使用者補充需求\n{user_refinements or '無'}\n\n"
-              f"請生成完整的戰情表 HTML 頁面。只輸出 HTML 程式碼。")
+              f"請生成完整的戰情表 HTML 頁面。只輸出 HTML 程式碼。\n\n"
+              f"**重要提醒**：\n"
+              f"- 所有 JavaScript 程式碼必須是標準 JS 語法，不要用 Python 語法\n"
+              f"- 例如：用 key.split('/').pop() 而非 key.rsplit('/', 1)[-1]\n"
+              f"- 例如：用 Object.keys(obj).length 而非 len(obj)\n"
+              f"- 例如：用 array.isArray(x) 而非 isinstance(x, list)")
     raw = call_llm(prompt, system=SYSTEM_PROMPT_BASE)
     if raw.startswith('<'):
         return raw

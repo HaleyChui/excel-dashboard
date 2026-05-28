@@ -168,7 +168,7 @@ createApp({
     const ins = [];
     for (const [key, rows] of Object.entries(SHEET_DATA)) {
       if (!rows || !rows.length) continue;
-      const sname = key.rsplit('/', 1)[-1];
+      const sname = key.split('/').pop();
       const numKeys = Object.keys(rows[0]).filter(k => typeof rows[0][k] === 'number');
       for (const n of numKeys) {
         const vals = rows.map(r => r[n]).filter(v => typeof v === 'number');

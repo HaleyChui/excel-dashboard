@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4-2. Inventory Monitor: Shipping Status_2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;background:#f4f6fa;color:#1a1a1a}
+.upload-panel{background:#1f3c72;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid #ffd700}
+.up-title{font-size:12px;font-weight:700;white-space:nowrap;color:#ffd700}
+.up-group{display:flex;align-items:center;gap:6px}
+.up-label{font-size:10.5px;color:#cde;white-space:nowrap}
+.file-btn{background:#fff;color:#1f3c72;border:none;border-radius:4px;padding:3px 10px;font-size:10.5px;font-weight:700;cursor:pointer}
+.file-btn:hover{background:#e8f0fe}
+.week-sel{font-size:10.5px;padding:3px 6px;border-radius:4px;border:none;background:#fff;color:#1f3c72;font-weight:700}
+.load-btn{background:#ffd700;color:#1f3c72;border:none;border-radius:4px;padding:3px 12px;font-size:10.5px;font-weight:700;cursor:pointer}
+.load-btn:hover{background:#ffe94d}
+.up-status{font-size:10px;color:#adf}
+.fcst-panel{background:#2d5016;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.fcst-title{font-size:12px;font-weight:700;color:#b8f59a;white-space:nowrap}
+.fcst-input-group{display:flex;align-items:center;gap:5px}
+.fcst-lbl{font-size:10px;color:#9dc;white-space:nowrap}
+.fcst-inp{width:72px;font-size:10.5px;padding:2px 5px;border-radius:3px;border:none;text-align:right;color:#1a1a1a;font-weight:600}
+.fcst-apply{background:#b8f59a;color:#1a3a00;border:none;border-radius:4px;padding:3px 12px;font-size:10.5px;font-weight:700;cursor:pointer}
+.fcst-apply:hover{background:#d0ffb0}
+.fcst-note{font-size:10px;color:#9dc;font-style:italic}
+.slide{background:#fff;padding:14px 18px 16px;max-width:980px;margin:0 auto}
+.slide-title{font-size:15px;font-weight:700;color:#1f3c72;border-bottom:3px solid #1f3c72;padding-bottom:5px;margin-bottom:10px}
+.sec-row{display:flex;align-items:center;gap:5px;margin:0 0 4px}
+.sec-lbl{font-size:12px;font-weight:700;color:#1f3c72}
+table{border-collapse:collapse}
+.t1{width:100%;font-size:9.5px}
+.t1 th,.t1 td{border:1px solid #bbb;padding:2px 3px;text-align:center;white-space:nowrap}
+.t1 th{background:#1f3c72;color:#fff;font-weight:600}
+.td-hist{background:#f0f0f0;color:#555}
+.td-may{background:#fff2cc}
+.td-total{background:#e2efda;font-weight:700}
+.td-grandtotal{background:#c6e0b4;font-weight:700}
+.td-rowtotal{background:#dce6f1;font-weight:700}
+.td-w18p{background:#fce4d6}
+.td-acth{background:#f4cccc;color:#c00;font-weight:700}
+.td-fut{color:#aaa}
+.row-label{text-align:left!important;font-weight:600;padding-left:4px!important}
+.t2{border-collapse:collapse;font-size:10.5px}
+.t2 th,.t2 td{border:1px solid #999;padding:3px 8px;text-align:center;white-space:nowrap}
+.th-fcst{background:#4472c4;color:#fff;font-weight:600}
+.th-act{background:#f79646;color:#fff;font-weight:600}
+.td-rate{background:#f4cccc;color:#c00;font-weight:700}
+.td-planrate{background:#ffe699;font-weight:700}
+.td-subtlrate{background:#f4cccc;color:#c00;font-weight:700}
+.td-gray{color:#aaa}
+.ann-red{display:inline-block;border:1.5px solid #c00;background:#fff2f2;color:#c00;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px}
+.ann-orange{display:inline-block;border:1.5px solid #e67700;background:#fff8ec;color:#c06000;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px}
+.ann-badge{display:inline-block;background:#c00;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px}
+.row2{display:flex;gap:14px;align-items:flex-start;margin-bottom:8px}
+.col-ann{display:flex;flex-direction:column;gap:5px;padding-top:20px}
+.chart-wrap{position:relative;height:185px;width:100%}
+.legend-row{display:flex;gap:12px;justify-content:flex-end;margin-bottom:2px}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:10px}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.leg-line{width:16px;height:2px;background:#1f3c72}
+.notes-bar{background:#1f3c72;border-radius:6px;padding:7px 12px;margin-top:8px;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.n-title{color:#ffd700;font-size:11px;font-weight:700;white-space:nowrap}
+.note-item{display:flex;align-items:flex-start;gap:4px;font-size:10.5px;color:#fff;line-height:1.5}
+.note-item b{color:#ffd700}
+.chipmos{font-size:12px;font-weight:700;color:#1f3c72;text-align:right;margin-top:6px}
+.td-fcst-val{color:#1a6614!important;font-weight:600}
+.td-black{color:#1a1a1a!important}
+.td-curwk{color:#1a4fa8!important;font-weight:700}
+</style>
+</head>
+<body>
+<!-- 報表中心返回列 -->
+<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-bottom:2px solid #f87171;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-family:'Microsoft JhengHei',Arial,sans-serif">
+  <div style="display:inline-flex;gap:8px;align-items:center">
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;color:#6ee7b7;text-decoration:none;font-size:13px;font-weight:700;padding:6px 14px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:8px;transition:all .2s" onmouseover="this.style.background='rgba(16,185,129,0.25)';this.style.transform='translateX(-2px)'" onmouseout="this.style.background='rgba(16,185,129,0.15)';this.style.transform='translateX(0)'">
+      <span style="font-size:16px">⌂</span><span>回首頁</span>
+    </a>
+    <a href="1425_dashboard.html" style="display:inline-flex;align-items:center;gap:8px;color:#fca5a5;text-decoration:none;font-size:13px;font-weight:700;padding:6px 14px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:8px;transition:all .2s" onmouseover="this.style.background='rgba(239,68,68,0.25)';this.style.transform='translateX(-2px)'" onmouseout="this.style.background='rgba(239,68,68,0.15)';this.style.transform='translateX(0)'">
+      <span style="font-size:16px">📊</span><span>報表中心</span>
+    </a>
+  </div>
+  <div style="color:#94a3b8;font-size:12px;letter-spacing:1px">
+    <span style="color:#fca5a5;font-weight:700">🚚 出貨週報</span>
+    <span style="margin:0 8px;color:#475569">●</span>
+    <span>Shipping Status 2026</span>
+  </div>
+</div>
+
+
+<!-- ACT 更新列 -->
+<div class="upload-panel">
+  <span class="up-title">📦 ACT 週別更新（出貨）</span>
+  <div class="up-group">
+    <span class="up-label">更新週別：</span>
+    <select class="week-sel" id="weekSel">
+      <option value="18p">W18 (5/1~3)</option>
+      <option value="19">W19 (5/4~10)</option>
+      <option value="20">W20 (5/11~17)</option>
+      <option value="21">W21 (5/18~24)</option>
+      <option value="22">W22 (5/25~31)</option>
+      <option value="23">W23 (6/1~7)</option>
+      <option value="24">W24 (6/8~14)</option>
+      <option value="25">W25 (6/15~21)</option>
+      <option value="26">W26 (6/22~28)</option>
+      <option value="27">W27 (6/29~7/5)</option>
+      <option value="28">W28 (7/6~12)</option>
+      <option value="29">W29 (7/13~19)</option>
+      <option value="30">W30 (7/20~26)</option>
+      <option value="31">W31 (7/27~8/2)</option>
+      <option value="32">W32 (8/3~9)</option>
+      <option value="33">W33 (8/10~16)</option>
+      <option value="34">W34 (8/17~23)</option>
+      <option value="35">W35 (8/24~30)</option>
+      <option value="36">W36 (8/31~9/6)</option>
+      <option value="37">W37 (9/7~13)</option>
+      <option value="38">W38 (9/14~20)</option>
+      <option value="39">W39 (9/21~27)</option>
+      <option value="40">W40 (9/28~10/4)</option>
+      <option value="41">W41 (10/5~11)</option>
+      <option value="42">W42 (10/12~18)</option>
+      <option value="43">W43 (10/19~25)</option>
+      <option value="44">W44 (10/26~11/1)</option>
+      <option value="45">W45 (11/2~8)</option>
+      <option value="46">W46 (11/9~15)</option>
+      <option value="47">W47 (11/16~22)</option>
+      <option value="48">W48 (11/23~29)</option>
+      <option value="49">W49 (11/30~12/6)</option>
+      <option value="50">W50 (12/7~13)</option>
+      <option value="51">W51 (12/14~20)</option>
+      <option value="52">W52 (12/21~27)</option>
+    </select>
+  </div>
+  <div class="up-group">
+    <span class="up-label">WB Excel：</span>
+    <button class="file-btn" onclick="document.getElementById('wbFile').click()">選擇檔案</button>
+    <input type="file" id="wbFile" accept=".xlsx,.xls" style="display:none" onchange="handleFile('wb',this)">
+    <span class="up-status" id="wbStatus">尚未上傳</span>
+  </div>
+  <div class="up-group">
+    <span class="up-label">WS Excel：</span>
+    <button class="file-btn" onclick="document.getElementById('wsFile').click()">選擇檔案</button>
+    <input type="file" id="wsFile" accept=".xlsx,.xls" style="display:none" onchange="handleFile('ws',this)">
+    <span class="up-status" id="wsStatus">尚未上傳</span>
+  </div>
+  <button class="load-btn" onclick="applyActUpdate()">▶ 套用 ACT</button>
+</div>
+
+<!-- FCST 更新列 -->
+<div class="fcst-panel">
+  <span class="fcst-title">🎯 FCST 月份更新</span>
+  <div class="fcst-input-group">
+    <span class="fcst-lbl">當月：</span>
+    <select class="week-sel" id="fcstMonthSel" style="width:90px">
+      <option value="jan">JAN</option>
+      <option value="feb">FEB</option>
+      <option value="mar">MAR</option>
+      <option value="apr">APR</option>
+      <option value="may" selected>MAY</option>
+      <option value="jun">JUN</option>
+      <option value="jul">JUL</option>
+      <option value="aug">AUG</option>
+      <option value="sep">SEP</option>
+      <option value="oct">OCT</option>
+      <option value="nov">NOV</option>
+      <option value="dec">DEC</option>
+    </select>
+  </div>
+  <div class="fcst-input-group">
+    <span class="fcst-lbl">Bumping FCST：</span>
+    <input class="fcst-inp" id="fcstBump" type="number" value="84159">
+  </div>
+  <div class="fcst-input-group">
+    <span class="fcst-lbl">W/S FCST：</span>
+    <input class="fcst-inp" id="fcstWS" type="number" value="51959">
+  </div>
+  <button class="fcst-apply" onclick="applyFcstUpdate()">✔ 套用 FCST</button>
+  <span class="fcst-note" id="fcstApplied">週 FCST 依曆天數自動比例分配</span>
+</div>
+
+<div class="slide">
+  <div class="slide-title">4-2. Inventory Monitor: Shipping Status_2026</div>
+
+  <!-- Shipping (pcs) -->
+  <div class="sec-row"><span style="color:#1f3c72;font-weight:700;font-size:11px">▶</span><span class="sec-lbl">Shipping (pcs)</span></div>
+  <table class="t1" style="margin-bottom:3px">
+    <thead>
+      <tr>
+        <th style="width:82px">Month</th>
+        <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+        <th style="background:#1f3c72">May</th>
+        <th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+        <th style="background:#538135;color:#fff">Total(PCS)</th>
+        <th>W17<br><small>4/20~26</small></th>
+        <th>W18<br><small>4/27~30</small></th>
+        <th class="td-acth">W18<br><small>5/1~3</small></th>
+        <th class="td-acth">W19<br><small>5/4~10</small></th>
+        <th class="td-acth">W20<br><small>5/11~17</small></th>
+        <th id="thW21" class="td-fut">W21<br><small>5/18~24</small></th>
+        <th id="thW22" class="td-fut">W22<br><small>5/25~31</small></th>
+      </tr>
+    </thead>
+    <tbody id="pcsbody"></tbody>
+  </table>
+  <div style="text-align:right;margin:2px 0 8px">
+    <span class="ann-badge" id="weekBadge">週出貨量 31K，1,954 lot</span>
+  </div>
+
+  <!-- Shipping (lot) -->
+  <div class="sec-row" style="margin-top:4px"><span style="color:#1f3c72;font-weight:700;font-size:11px">▶</span><span class="sec-lbl">Shipping (lot)</span></div>
+  <table class="t1" style="margin-bottom:3px">
+    <thead>
+      <tr>
+        <th style="width:82px">Month</th>
+        <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+        <th style="background:#1f3c72">May</th>
+        <th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+        <th style="background:#538135;color:#fff">Total(LOT)</th>
+        <th>W17<br><small>4/20~26</small></th>
+        <th>W18<br><small>4/27~30</small></th>
+        <th class="td-acth">W18<br><small>5/1~3</small></th>
+        <th class="td-acth">W19<br><small>5/4~10</small></th>
+        <th class="td-acth">W20<br><small>5/11~17</small></th>
+        <th id="lotThW21" class="td-fut">W21<br><small>5/18~24</small></th>
+        <th id="lotThW22" class="td-fut">W22<br><small>5/25~31</small></th>
+      </tr>
+    </thead>
+    <tbody id="lotbody"></tbody>
+  </table>
+  <div style="text-align:right;margin:2px 0 8px">
+    <span class="ann-badge" id="lotBadge" style="background:#538135">週出貨 1,954 lot</span>
+  </div>
+
+  <!-- FCST/ACT -->
+  <div class="sec-row"><span style="color:#1f3c72;font-weight:700;font-size:11px">▶</span><span class="sec-lbl" id="fcstActTitle">2026 MAY. Shipping FCST / ACT</span></div>
+  <div class="row2">
+    <div>
+      <table class="t2">
+        <thead>
+          <tr>
+            <th class="th-fcst" style="width:118px">Production Plan</th>
+            <th class="th-fcst" style="width:76px" id="th2Month">MAY</th>
+            <th class="th-fcst" style="width:72px">Plan rate</th>
+            <th class="th-act" style="width:90px">目標片數</th>
+            <th class="th-act" style="width:90px">累計出貨片數</th>
+            <th class="th-act" style="width:70px">Act. rate</th>
+          </tr>
+        </thead>
+        <tbody id="t2body"></tbody>
+      </table>
+    </div>
+    <div class="col-ann">
+      <div><span class="ann-red" id="annDiff"></span></div>
+      <div style="font-size:10px;color:#555;margin-top:1px" id="annDetail"></div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="sec-row"><span style="color:#1f3c72;font-weight:700;font-size:11px">▶</span><span class="sec-lbl" id="chartTitle">2026 MAY. Shipping Q'ty Status</span></div>
+  <div style="text-align:center;font-size:11px;font-weight:700;margin-bottom:2px">Chupei Shipping Q'ty Status</div>
+  <div class="legend-row">
+    <span class="leg-item"><span class="leg-sq" style="background:#4472c4"></span>QTY</span>
+    <span class="leg-item"><span class="leg-line"></span>&nbsp;FCST</span>
+  </div>
+  <div class="chart-wrap"><canvas id="shipChart" role="img" aria-label="Chupei weekly shipping chart May 2026"></canvas></div>
+  <div style="margin-top:4px"><span class="ann-orange" id="annGap"></span></div>
+
+  <div class="notes-bar">
+    <span class="n-title">📋 主管重點</span>
+    <div class="note-item" id="note1"></div>
+    <div class="note-item" id="note2"></div>
+    <div class="note-item" id="note3"></div>
+    <div class="note-item" id="note4"></div>
+  </div>
+  <div class="chipmos" style="margin-top:7px">🔷 ChipMOS</div>
+</div>
+
+<script src="lib/chart.umd.js"></script>
+<script src="lib/xlsx.full.min.js"></script>
+<script>
+// ═══ 固定歷史數據（僅來自 出貨 分頁）═══
+const H = {
+  pcs: {
+    wb: {jan:81971, feb:78320, mar:98450,  apr:78796},
+    ws: {jan:47142, feb:42022, mar:49938,  apr:48429},
+    tot:{jan:129113,feb:120342,mar:127225, apr:127225}
+  },
+  lot: {
+    wb: {jan:4324, feb:4033, mar:5060, apr:4043},
+    ws: {jan:4004, feb:3698, mar:4440, apr:4435},
+    tot:{jan:8328, feb:7731, mar:9500, apr:8478}
+  }
+};
+
+// Apr 週別（出貨分頁）
+const APR_WK = {
+  pcs: {
+    wb: {w14:12258,w15:20015,w16:20120,w17:15673,w18:10730},
+    ws: {w14:7415, w15:10763,w16:11322,w17:11105,w18:7824 },
+    tot:{w14:19673,w15:30778,w16:31442,w17:26778,w18:18554}
+  },
+  lot: {
+    wb: {w14:622, w15:994,  w16:1039, w17:836,  w18:552 },
+    ws: {w14:643, w15:994,  w16:1047, w17:1093, w18:658 },
+    tot:{w14:1265,w15:1988, w16:2086, w17:1929, w18:1210}
+  }
+};
+
+// 週別曆天數（5月）
+const WK_DAYS={w18p:3,w19:7,w20:7,w21:7,w22:7};
+const WK_DAYS_TOTAL=31;
+const WK_END_DAY={
+  w18p:3,w19:10,w20:17,w21:24,w22:31,
+  w23:7,w24:14,w25:21,w26:28,w27:35,w28:42,w29:49,w30:56,
+  w31:63,w32:70,w33:77,w34:84,w35:91,w36:98,w37:105,w38:112,
+  w39:119,w40:126,w41:133,w42:140,w43:147,w44:154,w45:161,
+  w46:168,w47:175,w48:182,w49:189,w50:196,w51:203,w52:210
+};
+
+// ═══ FCST ═══
+let FCST={bump:84159,ws:51959,total:136118,month:'MAY',monthDays:31};
+function calcWkFcst(total){
+  const r={};
+  Object.keys(WK_DAYS).forEach(w=>{r[w]=Math.round(total*WK_DAYS[w]/WK_DAYS_TOTAL);});
+  return r;
+}
+
+// ═══ ACT（出貨分頁數據）═══
+let ACT={
+  pcs:{
+    wb: {w18p:7220, w19:15410,w20:20281,w21:0,w22:0,w23:0,w24:0,w25:0,w26:0,w27:0,w28:0,w29:0,w30:0,w31:0,w32:0,w33:0,w34:0,w35:0,w36:0,w37:0,w38:0,w39:0,w40:0,w41:0,w42:0,w43:0,w44:0,w45:0,w46:0,w47:0,w48:0,w49:0,w50:0,w51:0,w52:0},
+    ws: {w18p:3472, w19:12131,w20:10234,w21:0,w22:0,w23:0,w24:0,w25:0,w26:0,w27:0,w28:0,w29:0,w30:0,w31:0,w32:0,w33:0,w34:0,w35:0,w36:0,w37:0,w38:0,w39:0,w40:0,w41:0,w42:0,w43:0,w44:0,w45:0,w46:0,w47:0,w48:0,w49:0,w50:0,w51:0,w52:0},
+    tot:{w18p:10692,w19:27541,w20:30515,w21:0,w22:0,w23:0,w24:0,w25:0,w26:0,w27:0,w28:0,w29:0,w30:0,w31:0,w32:0,w33:0,w34:0,w35:0,w36:0,w37:0,w38:0,w39:0,w40:0,w41:0,w42:0,w43:0,w44:0,w45:0,w46:0,w47:0,w48:0,w49:0,w50:0,w51:0,w52:0}
+  },
+  lot:{
+    wb: {w18p:385, w19:829, w20:1038,w21:0,w22:0,w23:0,w24:0,w25:0,w26:0,w27:0,w28:0,w29:0,w30:0,w31:0,w32:0,w33:0,w34:0,w35:0,w36:0,w37:0,w38:0,w39:0,w40:0,w41:0,w42:0,w43:0,w44:0,w45:0,w46:0,w47:0,w48:0,w49:0,w50:0,w51:0,w52:0},
+    ws: {w18p:384, w19:1126,w20:916, w21:0,w22:0,w23:0,w24:0,w25:0,w26:0,w27:0,w28:0,w29:0,w30:0,w31:0,w32:0,w33:0,w34:0,w35:0,w36:0,w37:0,w38:0,w39:0,w40:0,w41:0,w42:0,w43:0,w44:0,w45:0,w46:0,w47:0,w48:0,w49:0,w50:0,w51:0,w52:0},
+    tot:{w18p:769, w19:1955,w20:1954,w21:0,w22:0}
+  }
+};
+
+let parsedWB_pcs=null,parsedWS_pcs=null,parsedWB_lot=0,parsedWSLot=0,shipChart=null;
+
+function n(v){return v===0?'<span style="color:#aaa">0</span>':v.toLocaleString();}
+function pct(a,b){return b===0?'—':(a/b*100).toFixed(1)+'%';}
+
+// ═══ FCST 套用 ═══
+function applyFcstUpdate(){
+  const bump=parseInt(document.getElementById('fcstBump').value)||0;
+  const ws  =parseInt(document.getElementById('fcstWS').value)||0;
+  const mon =document.getElementById('fcstMonthSel').value;
+  const monLabel=mon.toUpperCase();
+  const daysMap={may:31,jun:30,jul:31,aug:31,sep:30,oct:31,nov:30,dec:31};
+  FCST.bump=bump;FCST.ws=ws;FCST.total=bump+ws;
+  FCST.month=monLabel;FCST.monthDays=daysMap[mon]||31;
+  const wkF=calcWkFcst(FCST.total);
+  document.getElementById('fcstApplied').textContent=
+    '✓ '+monLabel+' FCST — W18p='+wkF.w18p.toLocaleString()+' W19='+wkF.w19.toLocaleString()+' W20~22='+wkF.w20.toLocaleString();
+  document.getElementById('fcstActTitle').textContent='2026 '+monLabel+'. Shipping FCST / ACT';
+  document.getElementById('chartTitle').textContent  ='2026 '+monLabel+". Shipping Q'ty Status";
+  document.getElementById('th2Month').textContent=monLabel;
+  render();
+}
+
+// ═══ 解析 出貨 分頁 ═══
+function parseShipSheet(file,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    // Find 出貨 sheet
+    const sheetName=wb.SheetNames.find(s=>s.trim()==='出貨');
+    if(!sheetName){alert('找不到「出貨」分頁！');cb(0,0);return;}
+    const ws=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+    let totalPcs=0,totalLot=0;
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i];
+      const r0=String(r[0]||'').trim();
+      if(r0.includes('加總')&&r0.includes('OUTQTY')){
+        // Last non-null cell = 總計
+        for(let j=r.length-1;j>=1;j--){
+          if(r[j]!==null&&!isNaN(r[j])){totalPcs=Math.round(r[j]);break;}
+        }
+      }
+      if(r0.includes('計數')&&r0.includes('廠内客批')){
+        for(let j=r.length-1;j>=1;j--){
+          if(r[j]!==null&&!isNaN(r[j])){totalLot=Math.round(r[j]);break;}
+        }
+      }
+    }
+    cb(totalPcs,totalLot);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleFile(type,input){
+  const file=input.files[0];if(!file)return;
+  const el=document.getElementById(type==='wb'?'wbStatus':'wsStatus');
+  el.textContent='解析出貨分頁...';
+  parseShipSheet(file,(pcs,lot)=>{
+    if(type==='wb'){parsedWB_pcs=pcs;parsedWB_lot=lot;}
+    else           {parsedWS_pcs=pcs;parsedWSLot=lot;}
+    el.textContent='✓ '+file.name+' ('+pcs.toLocaleString()+' PCS / '+lot.toLocaleString()+' lot)';
+  });
+}
+
+function applyActUpdate(){
+  const selVal=document.getElementById('weekSel').value;
+  const wk=selVal==='18p'?'w18p':'w'+selVal;
+  if(parsedWB_pcs===null&&parsedWS_pcs===null){alert('請先上傳 WB 或 WS 檔案');return;}
+  if(parsedWB_pcs!==null){ACT.pcs.wb[wk]=parsedWB_pcs;ACT.lot.wb[wk]=parsedWB_lot;}
+  if(parsedWS_pcs!==null){ACT.pcs.ws[wk]=parsedWS_pcs;ACT.lot.ws[wk]=parsedWSLot;}
+  ACT.pcs.tot[wk]=ACT.pcs.wb[wk]+ACT.pcs.ws[wk];
+  ACT.lot.tot[wk]=ACT.lot.wb[wk]+ACT.lot.ws[wk];
+  const wNum=document.getElementById('weekSel').value;
+  const thId=wNum==='18p'?'thW18p':'thW'+wNum;
+  const lotThId=wNum==='18p'?'lotThW18p':'lotThW'+wNum;
+  [thId,lotThId].forEach(id=>{const el=document.getElementById(id);if(el)el.className='td-acth';});
+  parsedWB_pcs=null;parsedWS_pcs=null;parsedWB_lot=0;parsedWSLot=0;
+  document.getElementById('wbStatus').textContent='尚未上傳';
+  document.getElementById('wsStatus').textContent='尚未上傳';
+  document.getElementById('wbFile').value='';
+  document.getElementById('wsFile').value='';
+  render();
+}
+
+// ═══ Render ═══
+function render(){
+  const wkF=calcWkFcst(FCST.total);
+
+  // ── May totals ──
+  const mayWbPcs =ACT.pcs.wb.w18p+ACT.pcs.wb.w19+ACT.pcs.wb.w20+ACT.pcs.wb.w21+ACT.pcs.wb.w22+ACT.pcs.wb.w23+ACT.pcs.wb.w24+ACT.pcs.wb.w25+ACT.pcs.wb.w26+ACT.pcs.wb.w27+ACT.pcs.wb.w28+ACT.pcs.wb.w29+ACT.pcs.wb.w30+ACT.pcs.wb.w31+ACT.pcs.wb.w32+ACT.pcs.wb.w33+ACT.pcs.wb.w34+ACT.pcs.wb.w35+ACT.pcs.wb.w36+ACT.pcs.wb.w37+ACT.pcs.wb.w38+ACT.pcs.wb.w39+ACT.pcs.wb.w40+ACT.pcs.wb.w41+ACT.pcs.wb.w42+ACT.pcs.wb.w43+ACT.pcs.wb.w44+ACT.pcs.wb.w45+ACT.pcs.wb.w46+ACT.pcs.wb.w47+ACT.pcs.wb.w48+ACT.pcs.wb.w49+ACT.pcs.wb.w50+ACT.pcs.wb.w51+ACT.pcs.wb.w52;
+  const mayWsPcs =ACT.pcs.ws.w18p+ACT.pcs.ws.w19+ACT.pcs.ws.w20+ACT.pcs.ws.w21+ACT.pcs.ws.w22+ACT.pcs.ws.w23+ACT.pcs.ws.w24+ACT.pcs.ws.w25+ACT.pcs.ws.w26+ACT.pcs.ws.w27+ACT.pcs.ws.w28+ACT.pcs.ws.w29+ACT.pcs.ws.w30+ACT.pcs.ws.w31+ACT.pcs.ws.w32+ACT.pcs.ws.w33+ACT.pcs.ws.w34+ACT.pcs.ws.w35+ACT.pcs.ws.w36+ACT.pcs.ws.w37+ACT.pcs.ws.w38+ACT.pcs.ws.w39+ACT.pcs.ws.w40+ACT.pcs.ws.w41+ACT.pcs.ws.w42+ACT.pcs.ws.w43+ACT.pcs.ws.w44+ACT.pcs.ws.w45+ACT.pcs.ws.w46+ACT.pcs.ws.w47+ACT.pcs.ws.w48+ACT.pcs.ws.w49+ACT.pcs.ws.w50+ACT.pcs.ws.w51+ACT.pcs.ws.w52;
+  const mayTotPcs=ACT.pcs.tot.w18p+ACT.pcs.tot.w19+ACT.pcs.tot.w20+ACT.pcs.tot.w21+ACT.pcs.tot.w22+ACT.pcs.tot.w23+ACT.pcs.tot.w24+ACT.pcs.tot.w25+ACT.pcs.tot.w26+ACT.pcs.tot.w27+ACT.pcs.tot.w28+ACT.pcs.tot.w29+ACT.pcs.tot.w30+ACT.pcs.tot.w31+ACT.pcs.tot.w32+ACT.pcs.tot.w33+ACT.pcs.tot.w34+ACT.pcs.tot.w35+ACT.pcs.tot.w36+ACT.pcs.tot.w37+ACT.pcs.tot.w38+ACT.pcs.tot.w39+ACT.pcs.tot.w40+ACT.pcs.tot.w41+ACT.pcs.tot.w42+ACT.pcs.tot.w43+ACT.pcs.tot.w44+ACT.pcs.tot.w45+ACT.pcs.tot.w46+ACT.pcs.tot.w47+ACT.pcs.tot.w48+ACT.pcs.tot.w49+ACT.pcs.tot.w50+ACT.pcs.tot.w51+ACT.pcs.tot.w52;
+  const mayWbLot =ACT.lot.wb.w18p+ACT.lot.wb.w19+ACT.lot.wb.w20+ACT.lot.wb.w21+ACT.lot.wb.w22+ACT.lot.wb.w23+ACT.lot.wb.w24+ACT.lot.wb.w25+ACT.lot.wb.w26+ACT.lot.wb.w27+ACT.lot.wb.w28+ACT.lot.wb.w29+ACT.lot.wb.w30+ACT.lot.wb.w31+ACT.lot.wb.w32+ACT.lot.wb.w33+ACT.lot.wb.w34+ACT.lot.wb.w35+ACT.lot.wb.w36+ACT.lot.wb.w37+ACT.lot.wb.w38+ACT.lot.wb.w39+ACT.lot.wb.w40+ACT.lot.wb.w41+ACT.lot.wb.w42+ACT.lot.wb.w43+ACT.lot.wb.w44+ACT.lot.wb.w45+ACT.lot.wb.w46+ACT.lot.wb.w47+ACT.lot.wb.w48+ACT.lot.wb.w49+ACT.lot.wb.w50+ACT.lot.wb.w51+ACT.lot.wb.w52;
+  const mayWsLot =ACT.lot.ws.w18p+ACT.lot.ws.w19+ACT.lot.ws.w20+ACT.lot.ws.w21+ACT.lot.ws.w22+ACT.lot.ws.w23+ACT.lot.ws.w24+ACT.lot.ws.w25+ACT.lot.ws.w26+ACT.lot.ws.w27+ACT.lot.ws.w28+ACT.lot.ws.w29+ACT.lot.ws.w30+ACT.lot.ws.w31+ACT.lot.ws.w32+ACT.lot.ws.w33+ACT.lot.ws.w34+ACT.lot.ws.w35+ACT.lot.ws.w36+ACT.lot.ws.w37+ACT.lot.ws.w38+ACT.lot.ws.w39+ACT.lot.ws.w40+ACT.lot.ws.w41+ACT.lot.ws.w42+ACT.lot.ws.w43+ACT.lot.ws.w44+ACT.lot.ws.w45+ACT.lot.ws.w46+ACT.lot.ws.w47+ACT.lot.ws.w48+ACT.lot.ws.w49+ACT.lot.ws.w50+ACT.lot.ws.w51+ACT.lot.ws.w52;
+  const mayTotLot=ACT.lot.tot.w18p+ACT.lot.tot.w19+ACT.lot.tot.w20+ACT.lot.tot.w21+ACT.lot.tot.w22+ACT.lot.tot.w23+ACT.lot.tot.w24+ACT.lot.tot.w25+ACT.lot.tot.w26+ACT.lot.tot.w27+ACT.lot.tot.w28+ACT.lot.tot.w29+ACT.lot.tot.w30+ACT.lot.tot.w31+ACT.lot.tot.w32+ACT.lot.tot.w33+ACT.lot.tot.w34+ACT.lot.tot.w35+ACT.lot.tot.w36+ACT.lot.tot.w37+ACT.lot.tot.w38+ACT.lot.tot.w39+ACT.lot.tot.w40+ACT.lot.tot.w41+ACT.lot.tot.w42+ACT.lot.tot.w43+ACT.lot.tot.w44+ACT.lot.tot.w45+ACT.lot.tot.w46+ACT.lot.tot.w47+ACT.lot.tot.w48+ACT.lot.tot.w49+ACT.lot.tot.w50+ACT.lot.tot.w51+ACT.lot.tot.w52;
+
+  // ── Running totals ──
+  const wbPcsTotal =H.pcs.wb.jan+H.pcs.wb.feb+H.pcs.wb.mar+H.pcs.wb.apr+mayWbPcs;
+  const wsPcsTotal =H.pcs.ws.jan+H.pcs.ws.feb+H.pcs.ws.mar+H.pcs.ws.apr+mayWsPcs;
+  const totPcsTotal=H.pcs.tot.jan+H.pcs.tot.feb+H.pcs.tot.mar+H.pcs.tot.apr+mayTotPcs;
+  const wbLotTotal =H.lot.wb.jan+H.lot.wb.feb+H.lot.wb.mar+H.lot.wb.apr+mayWbLot;
+  const wsLotTotal =H.lot.ws.jan+H.lot.ws.feb+H.lot.ws.mar+H.lot.ws.apr+mayWsLot;
+  const totLotTotal=H.lot.tot.jan+H.lot.tot.feb+H.lot.tot.mar+H.lot.tot.apr+mayTotLot;
+  const fcstTotal  =117522+109764+121350+137261+FCST.total;
+
+  // ── Plan rate ──
+  const allWks=['w52','w51','w50','w49','w48','w47','w46','w45','w44','w43','w42','w41','w40','w39','w38','w37','w36','w35','w34','w33','w32','w31','w30','w29','w28','w27','w26','w25','w24','w23','w22','w21','w20','w19','w18p'];
+  const latestWk=allWks.find(w=>ACT.pcs.tot[w]>0)||'w18p';
+  const dayOfMonth=WK_END_DAY[latestWk];
+  const planRate=(Math.min(dayOfMonth,FCST.monthDays)/FCST.monthDays*100).toFixed(1)+'%';
+
+  // ── Cumulative FCST vs ACT ──
+  let cumFcst=0,cumAct=0;
+  Object.keys(ACT.pcs.tot).forEach(w=>{
+    if(ACT.pcs.tot[w]>0){cumFcst+=wkF[w]||0;cumAct+=ACT.pcs.tot[w];}
+  });
+  const diffPcs=cumAct-cumFcst;
+  const diffPct=cumFcst>0?((diffPcs/cumFcst)*100).toFixed(1):'0.0';
+  const sign=diffPcs>=0?'+':'';
+
+  // Helper for table cell class
+  function cls(w,obj){return obj[w]>0?'td-acth':'td-fut';}
+
+  // ── PCS Table ──
+  document.getElementById('pcsbody').innerHTML=
+    '<tr style="background:#fff2cc">'+
+      '<td class="row-label">FCST</td>'+
+      '<td class="td-hist">117,522</td><td class="td-hist">109,764</td><td class="td-hist">121,350</td>'+
+      '<td>137,261</td><td class="td-may">'+FCST.total.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-total">'+fcstTotal.toLocaleString()+'</td>'+
+      '<td>'+wkF.w20.toLocaleString()+'</td>'+  // W17 placeholder (APR)
+      '<td>'+wkF.w20.toLocaleString()+'</td>'+  // W18 APR placeholder
+      '<td class="td-w18p">'+wkF.w18p.toLocaleString()+'</td>'+
+      '<td class="td-acth">'+wkF.w19.toLocaleString()+'</td>'+
+      '<td class="td-acth">'+wkF.w20.toLocaleString()+'</td>'+
+      '<td class="'+(ACT.pcs.tot.w21>0?'td-acth':'td-fut')+'">'+wkF.w21.toLocaleString()+'</td>'+
+      '<td class="'+(ACT.pcs.tot.w22>0?'td-acth':'td-fut')+'">'+wkF.w22.toLocaleString()+'</td>'+
+    '</tr>'+
+    '<tr>'+
+      '<td class="row-label">WB Ship.Q\'ty</td>'+
+      '<td class="td-hist">81,971</td><td class="td-hist">78,320</td><td class="td-hist">98,450</td>'+
+      '<td>78,796</td><td class="td-may">'+mayWbPcs.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-total">'+wbPcsTotal.toLocaleString()+'</td>'+
+      '<td>15,673</td><td>10,730</td>'+
+      '<td class="td-w18p">7,220</td><td class="td-acth">15,410</td><td class="td-acth">20,281</td>'+
+      '<td class="'+cls('w21',ACT.pcs.wb)+'">'+n(ACT.pcs.wb.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.pcs.wb)+'">'+n(ACT.pcs.wb.w22)+'</td>'+
+    '</tr>'+
+    '<tr style="background:#fafafa">'+
+      '<td class="row-label">WS Ship.Q\'ty</td>'+
+      '<td class="td-hist">47,142</td><td class="td-hist">42,022</td><td class="td-hist">49,938</td>'+
+      '<td>48,429</td><td class="td-may">'+mayWsPcs.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-total">'+wsPcsTotal.toLocaleString()+'</td>'+
+      '<td>11,105</td><td>7,824</td>'+
+      '<td class="td-w18p">3,472</td><td class="td-acth">12,131</td><td class="td-acth">10,234</td>'+
+      '<td class="'+cls('w21',ACT.pcs.ws)+'">'+n(ACT.pcs.ws.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.pcs.ws)+'">'+n(ACT.pcs.ws.w22)+'</td>'+
+    '</tr>'+
+    '<tr class="td-rowtotal">'+
+      '<td class="row-label">Total Ship.Q\'ty</td>'+
+      '<td class="td-hist" style="background:#dce6f1">129,113</td>'+
+      '<td class="td-hist" style="background:#dce6f1">120,342</td>'+
+      '<td class="td-hist" style="background:#dce6f1">127,225</td>'+
+      '<td style="background:#dce6f1">127,225</td>'+
+      '<td style="background:#c6e0b4;font-weight:700">'+mayTotPcs.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-grandtotal">'+totPcsTotal.toLocaleString()+'</td>'+
+      '<td>26,778</td><td>18,554</td>'+
+      '<td class="td-w18p">10,692</td><td class="td-acth">27,541</td><td class="td-acth">30,515</td>'+
+      '<td class="'+cls('w21',ACT.pcs.tot)+'">'+n(ACT.pcs.tot.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.pcs.tot)+'">'+n(ACT.pcs.tot.w22)+'</td>'+
+    '</tr>';
+
+  // ── LOT Table ──
+  document.getElementById('lotbody').innerHTML=
+    '<tr>'+
+      '<td class="row-label">WB Ship Lot</td>'+
+      '<td class="td-hist">4,324</td><td class="td-hist">4,033</td><td class="td-hist">5,060</td>'+
+      '<td>4,043</td><td class="td-may">'+mayWbLot.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-total">'+wbLotTotal.toLocaleString()+'</td>'+
+      '<td>836</td><td>552</td>'+
+      '<td class="td-w18p">385</td><td class="td-acth">829</td><td class="td-acth">1,038</td>'+
+      '<td class="'+cls('w21',ACT.lot.wb)+'">'+n(ACT.lot.wb.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.lot.wb)+'">'+n(ACT.lot.wb.w22)+'</td>'+
+    '</tr>'+
+    '<tr style="background:#fafafa">'+
+      '<td class="row-label">WS Ship Lot</td>'+
+      '<td class="td-hist">4,004</td><td class="td-hist">3,698</td><td class="td-hist">4,440</td>'+
+      '<td>4,435</td><td class="td-may">'+mayWsLot.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-total">'+wsLotTotal.toLocaleString()+'</td>'+
+      '<td>1,093</td><td>658</td>'+
+      '<td class="td-w18p">384</td><td class="td-acth">1,126</td><td class="td-acth">916</td>'+
+      '<td class="'+cls('w21',ACT.lot.ws)+'">'+n(ACT.lot.ws.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.lot.ws)+'">'+n(ACT.lot.ws.w22)+'</td>'+
+    '</tr>'+
+    '<tr class="td-rowtotal">'+
+      '<td class="row-label">Total Ship Lot</td>'+
+      '<td class="td-hist" style="background:#dce6f1">8,328</td>'+
+      '<td class="td-hist" style="background:#dce6f1">7,731</td>'+
+      '<td class="td-hist" style="background:#dce6f1">9,500</td>'+
+      '<td style="background:#dce6f1">8,478</td>'+
+      '<td style="background:#c6e0b4;font-weight:700">'+mayTotLot.toLocaleString()+'</td>'+
+      '<td class="td-fut" colspan="7">0</td>'+
+      '<td class="td-grandtotal">'+totLotTotal.toLocaleString()+'</td>'+
+      '<td>1,929</td><td>1,210</td>'+
+      '<td class="td-w18p">769</td><td class="td-acth">1,955</td><td class="td-acth">1,954</td>'+
+      '<td class="'+cls('w21',ACT.lot.tot)+'">'+n(ACT.lot.tot.w21)+'</td>'+
+      '<td class="'+cls('w22',ACT.lot.tot)+'">'+n(ACT.lot.tot.w22)+'</td>'+
+    '</tr>';
+
+  // ── Apply text colour classes to PCS & LOT tables ──
+  setTimeout(()=>{
+    ['pcsbody','lotbody'].forEach(tbId=>{
+      const tb=document.getElementById(tbId);
+      if(!tb)return;
+      const rows=tb.querySelectorAll('tr');
+      rows.forEach(row=>{
+        const cells=row.querySelectorAll('td');
+        const isFcst=row.style.background==='rgb(255, 242, 204)'||
+                      (cells[0]&&cells[0].textContent.trim()==='FCST');
+        cells.forEach((td,i)=>{
+          if(i===0)return;
+          if(isFcst){
+            td.classList.add('td-fcst-val');
+          } else {
+            if(td.classList.contains('td-acth')||td.classList.contains('td-w18p')){
+              td.classList.add('td-curwk');
+            } else if(!td.classList.contains('td-hist')&&!td.classList.contains('td-fut')){
+              td.classList.add('td-black');
+            }
+          }
+        });
+      });
+    });
+  },0);
+
+  // ── Badges ──
+  const lastWk=['w22','w21','w20','w19','w18p'].find(w=>ACT.pcs.tot[w]>0)||'w18p';
+  const lastPcs=ACT.pcs.tot[lastWk], lastLot=ACT.lot.tot[lastWk];
+  document.getElementById('weekBadge').textContent='週出貨量 '+Math.round(lastPcs/1000)+'K，'+lastLot.toLocaleString()+' lot';
+  document.getElementById('lotBadge').textContent ='週出貨 '+lastLot.toLocaleString()+' lot';
+
+  // ── FCST/ACT Table ──
+  document.getElementById('t2body').innerHTML=
+    '<tr>'+
+      '<td>Bumping</td><td>'+FCST.bump.toLocaleString()+'</td>'+
+      '<td class="td-planrate" rowspan="2">'+planRate+'</td>'+
+      '<td>'+Math.round(FCST.bump*dayOfMonth/FCST.monthDays).toLocaleString()+'</td>'+
+      '<td><b>'+mayWbPcs.toLocaleString()+'</b></td>'+
+      '<td class="td-rate">'+pct(mayWbPcs,FCST.bump)+'</td>'+
+    '</tr>'+
+    '<tr>'+
+      '<td>W/S</td><td>'+FCST.ws.toLocaleString()+'</td>'+
+      '<td>'+Math.round(FCST.ws*dayOfMonth/FCST.monthDays).toLocaleString()+'</td>'+
+      '<td><b>'+mayWsPcs.toLocaleString()+'</b></td>'+
+      '<td class="td-rate">'+pct(mayWsPcs,FCST.ws)+'</td>'+
+    '</tr>'+
+    '<tr>'+
+      '<td style="font-weight:700">Subttl</td><td style="font-weight:700">'+FCST.total.toLocaleString()+'</td><td></td>'+
+      '<td>'+cumFcst.toLocaleString()+'</td>'+
+      '<td style="background:#f4cccc;font-weight:700;color:#c00">'+mayTotPcs.toLocaleString()+'</td>'+
+      '<td class="td-subtlrate">'+pct(mayTotPcs,FCST.total)+'</td>'+
+    '</tr>';
+
+  const planRateNum = Math.min(dayOfMonth,FCST.monthDays)/FCST.monthDays*100;
+  const actRateNum  = FCST.total>0 ? mayTotPcs/FCST.total*100 : 0;
+  const diffRate    = (actRateNum - planRateNum).toFixed(1);
+  const diffRateSign= parseFloat(diffRate)>=0?'+':'';
+  document.getElementById('annDiff').textContent='對比FCST Plan，當月累計 '+diffRateSign+diffRate+' %';
+  document.getElementById('annDetail').innerHTML=
+    '累計 FCST '+cumFcst.toLocaleString()+' → ACT '+cumAct.toLocaleString()+' = 缺口 <b style="color:#c00">'+sign+diffPcs.toLocaleString()+' PCS</b><br>'+
+    '<span style="color:#999">Plan rate = '+dayOfMonth+'/'+FCST.monthDays+' = '+planRate+'</span>';
+
+  const lastFcstVal=wkF[lastWk];
+  document.getElementById('annGap').textContent=
+    '▲ 最新週出貨 '+lastPcs.toLocaleString()+' vs FCST '+lastFcstVal.toLocaleString()+'，差距 '+(lastPcs-lastFcstVal).toLocaleString()+' PCS';
+
+  const wsR=FCST.ws>0?mayWsPcs/FCST.ws*100:0;
+  const wbR=FCST.bump>0?mayWbPcs/FCST.bump*100:0;
+  const lastLbl=lastWk.toUpperCase().replace('W18P','W18(5/1~3)');
+  const planRateNumNote = Math.min(dayOfMonth,FCST.monthDays)/FCST.monthDays*100;
+  const wbVsPlan = (wbR - planRateNumNote).toFixed(1);
+  const wsVsPlan = (wsR - planRateNumNote).toFixed(1);
+  const wbSign = parseFloat(wbVsPlan)>=0?'+':'';
+  const wsSign = parseFloat(wsVsPlan)>=0?'+':'';
+  document.getElementById('note1').innerHTML='<span>⚑</span><span>WB達成率 <b>'+wbR.toFixed(1)+'%</b>（vs Plan '+wbSign+wbVsPlan+'%）；WS <b>'+wsR.toFixed(1)+'%</b>（'+wsSign+wsVsPlan+'%）</span>';
+  const wbLotSizeN = ACT.lot.wb[lastWk]>0 ? ACT.pcs.wb[lastWk]/ACT.lot.wb[lastWk] : 0;
+  const wsLotSizeN = ACT.lot.ws[lastWk]>0 ? ACT.pcs.ws[lastWk]/ACT.lot.ws[lastWk] : 0;
+  const wbGap = mayWbPcs - Math.round(FCST.bump*dayOfMonth/FCST.monthDays);
+  const wsGap = mayWsPcs - Math.round(FCST.ws*dayOfMonth/FCST.monthDays);
+  const wbGapSign = wbGap>=0?'+':'';
+  const wsGapSign = wsGap>=0?'+':'';
+  const wbGapLot  = wbLotSizeN>0 ? Math.round(Math.abs(wbGap)/wbLotSizeN) : 0;
+  const wsGapLot  = wsLotSizeN>0 ? Math.round(Math.abs(wsGap)/wsLotSizeN) : 0;
+  const wbGapLotStr = (wbGap<0?'-':'+') + wbGapLot.toLocaleString();
+  const wsGapLotStr = (wsGap<0?'-':'+') + wsGapLot.toLocaleString();
+  document.getElementById('note2').innerHTML=
+    '<span>⚠</span><span>'+FCST.month+'月累計缺口：WB <b>'+wbGapSign+wbGap.toLocaleString()+' PCS</b>（≈ '+wbGapLotStr+' lot）；WS <b>'+wsGapSign+wsGap.toLocaleString()+' PCS</b>（≈ '+wsGapLotStr+' lot）；'+(diffPcs<0?'需加速出貨補足缺口':'整體已超前目標')+'</span>';
+  document.getElementById('note3').innerHTML='<span>✓</span><span>'+lastLbl+' 出貨 <b>'+lastPcs.toLocaleString()+' PCS / '+lastLot.toLocaleString()+' lot</b>，週達成率 '+pct(lastPcs,lastFcstVal)+'</span>';
+  // Lot size analysis
+  const lotSize = lastLot>0 ? (lastPcs/lastLot).toFixed(1) : 0;
+  const wbLotSize = ACT.lot.wb[lastWk]>0 ? (ACT.pcs.wb[lastWk]/ACT.lot.wb[lastWk]).toFixed(1) : 0;
+  const wsLotSize = ACT.lot.ws[lastWk]>0 ? (ACT.pcs.ws[lastWk]/ACT.lot.ws[lastWk]).toFixed(1) : 0;
+  const lotSizeDiff = (parseFloat(wbLotSize) - parseFloat(wsLotSize)).toFixed(1);
+  const lotDiffSign = parseFloat(lotSizeDiff)>=0?'+':'';
+  document.getElementById('note4').innerHTML='<span>📦</span><span>Lot Size：WB <b>'+wbLotSize+'</b> / WS <b>'+wsLotSize+'</b>，差異 <b>'+lotDiffSign+lotSizeDiff+'</b> PCS/lot</span>';
+
+  // ── Chart ──
+  const chartAct =[APR_WK.pcs.tot.w18,ACT.pcs.tot.w18p,ACT.pcs.tot.w19,ACT.pcs.tot.w20,ACT.pcs.tot.w21,ACT.pcs.tot.w22];
+  const chartFcst=[APR_WK.pcs.tot.w18,wkF.w18p,wkF.w19,wkF.w20,wkF.w21,wkF.w22];
+  const bColors=chartAct.map((v,i)=>{
+    if(v===0)return '#e0e0e0';
+    return v>=chartFcst[i]?'#4472c4':'#c00';
+  });
+
+  if(shipChart)shipChart.destroy();
+  shipChart=new Chart(document.getElementById('shipChart').getContext('2d'),{
+    data:{
+      labels:['W18\n(4/27~30)','W18\n(5/1~3)','W19\n(5/4~10)','W20\n(5/11~17)','W21\n(5/18~24)','W22\n(5/25~31)'],
+      datasets:[
+        {type:'bar',label:'QTY',data:chartAct,backgroundColor:bColors,
+         borderColor:bColors.map(c=>c==='#c00'?'#900':c==='#4472c4'?'#2a4f9c':'#ccc'),borderWidth:1,order:2},
+        {type:'line',label:'FCST',data:chartFcst,borderColor:'#1f3c72',backgroundColor:'transparent',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:'#fff',pointBorderColor:'#1f3c72',pointBorderWidth:2,fill:false,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toLocaleString()+' PCS'}}},
+      scales:{
+        x:{ticks:{font:{size:10},color:'#333',maxRotation:0},grid:{display:false}},
+        y:{min:0,max:Math.max(38000,Math.max(...chartFcst)*1.15),
+           ticks:{stepSize:5000,font:{size:10},color:'#555',callback:v=>v.toLocaleString()},
+           grid:{color:'rgba(0,0,0,0.07)'}}
+      },
+      layout:{padding:{top:28}}
+    },
+    plugins:[{id:'lbl',afterDatasetsDraw(chart){
+      const ctx=chart.ctx;
+      // ACT labels: yellow, larger, drawn at bar center (mid-height)
+      chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+        if(chartAct[i]===0)return;
+        const barBot=chart.scales.y.getPixelForValue(0);
+        const midY=(bar.y+barBot)/2;
+        ctx.save();
+        ctx.fillStyle='#FFD700';
+        ctx.font='bold 14px Segoe UI,Arial';
+        ctx.textAlign='center';
+        ctx.shadowColor='rgba(0,0,0,0.45)';
+        ctx.shadowBlur=3;
+        ctx.fillText(chartAct[i].toLocaleString(),bar.x,midY+5);
+        ctx.restore();
+      });
+      // FCST labels: drawn above the bar top
+      chart.getDatasetMeta(1).data.forEach((pt,i)=>{
+        if(chartFcst[i]===0)return;
+        ctx.save();
+        ctx.fillStyle='#1a6614';
+        ctx.font='bold 10px Segoe UI,Arial';
+        ctx.textAlign='center';
+        ctx.fillText(chartFcst[i].toLocaleString(), pt.x, pt.y-12);
+        ctx.restore();
+      });
+    }}]
+  });
+}
+
+render();
+</script>
+</body>
+</html>
