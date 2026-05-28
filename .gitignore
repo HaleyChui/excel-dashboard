@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (user data, not code)
+backend/uploads/
+
+# DB (runtime)
+backend/dashboard.db
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Env files with secrets
+*.env
+backend/.env
+
+# Logs
+*.log
+/tmp/

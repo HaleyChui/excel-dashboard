@@ -1,0 +1,54 @@
+// Bootstrap 4 custom overrides + design tokens
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+
+:root {
+  --color-bg: #F5F7FA;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-primary: #000000;
+  --color-text: #111827;
+  --color-text-muted: #6B7280;
+  --radius-card: 8px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+// 讓捲軸好看一點
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+// Card 統一樣式
+.card {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
+}
+
+// Table
+.table-sticky-header thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+// Progress bar 自定義顏色
+.progress-bar {
+  background: var(--color-primary);
+}
+
+// Print styles
+@media print {
+  .navbar, .btn, no-print { display: none !important; }
+  .container-fluid { padding: 0 !important; }
+}

@@ -1,0 +1,7 @@
+# Backend
+flask
+flask-cors
+pandas
+openpyxl
+python-dotenv
+openai  # or your preferred LLM provider SDK

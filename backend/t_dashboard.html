@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>各部門業績戰情表</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Noto Sans TC',system-ui,sans-serif;background:#0D0D0D;color:#E5E7EB;overflow-x:hidden}
+.layout{display:flex;min-height:100vh}
+/* Sidebar */
+.sidebar{width:240px;background:#141414;border-right:1px solid #2A2A2A;padding:24px 16px;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar-logo{font-size:20px;font-weight:700;color:#00D4AA;margin-bottom:32px;letter-spacing:-0.5px;display:flex;align-items:center;gap:10px}
+.sidebar-logo span{background:#00D4AA;color:#0D0D0D;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px}
+.sidebar-nav a{color:#9CA3AF;text-decoration:none;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:10px}
+.sidebar-nav a:hover,.sidebar-nav a.active{background:#2A2A2A;color:#E5E7EB}
+.sidebar-nav a.active{border-left:3px solid #00D4AA;background:rgba(0,212,170,0.08);color:#00D4AA}
+.sidebar-footer{margin-top:auto;padding-top:24px;border-top:1px solid #2A2A2A;font-size:12px;color:#6B7280}
+/* Main */
+.main{flex:1;padding:28px 32px;overflow-y:auto;min-width:0}
+.page-header{margin-bottom:24px}
+.page-header h1{font-size:22px;font-weight:700;color:#F9FAFB}
+.page-header p{font-size:13px;color:#9CA3AF;margin-top:4px}
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi-card{background:#141414;border:1px solid #2A2A2A;border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.gain::before{background:#00D4AA}
+.kpi-card.loss::before{background:#FF4757}
+.kpi-card.warning::before{background:#FFB800}
+.kpi-card.neutral::before{background:#6366F1}
+.kpi-label{font-size:12px;color:#9CA3AF;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;color:#F9FAFB;letter-spacing:-0.5px}
+.kpi-value .unit{font-size:14px;color:#9CA3AF;font-weight:500}
+.kpi-change{font-size:12px;font-weight:600;margin-top:6px}
+.kpi-change.up{color:#00D4AA}
+.kpi-change.down{color:#FF4757}
+.kpi-mini-chart{position:absolute;right:16px;bottom:16px;width:80px;height:32px;opacity:0.5}
+/* Chart Grid */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+.chart-card{background:#141414;border:1px solid #2A2A2A;border-radius:12px;padding:16px}
+.chart-card.title-only{padding-top:16px}
+.chart-title{font-size:13px;font-weight:600;color:#D1D5DB;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.chart-title .badge{font-size:10px;padding:2px 6px;border-radius:4px;background:#2A2A2A;color:#9CA3AF;font-weight:500}
+.chart-container{width:100%;height:260px}
+/* Full width charts */
+.chart-full{grid-column:1/-1}
+/* Table */
+.table-section{margin-bottom:28px}
+.table-card{background:#141414;border:1px solid #2A2A2A;border-radius:12px;padding:16px;overflow-x:auto}
+.table-card .section-title{font-size:14px;font-weight:600;color:#D1D5DB;margin-bottom:12px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead{position:sticky;top:0;z-index:1}
+.data-table thead th{background:#1A1A1A;color:#9CA3AF;font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid #2A2A2A;white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:0.3px}
+.data-table tbody tr{border-bottom:1px solid #1A1A1A;transition:background .1s}
+.data-table tbody tr:nth-child(even){background:rgba(255,255,255,0.02)}
+.data-table tbody tr:hover{background:rgba(0,212,170,0.05)}
+.data-table tbody td{padding:10px 14px;color:#E5E7EB;white-space:nowrap}
+.data-table .num{font-family:'Fira Code','JetBrains Mono',monospace;text-align:right;font-weight:500}
+.data-table .gain{color:#00D4AA}
+.data-table .loss{color:#FF4757}
+/* Insights */
+.insights-section{margin-bottom:28px}
+.insights-card{background:#141414;border:1px solid #2A2A2A;border-radius:12px;padding:20px}
+.insights-card .section-title{font-size:14px;font-weight:600;color:#D1D5DB;margin-bottom:16px}
+.insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.insight-item{background:rgba(255,255,255,0.03);border:1px solid #1F1F1F;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6;color:#D1D5DB}
+.insight-item .emoji{font-size:18px;margin-right:8px}
+.insight-item strong{color:#F9FAFB}
+/* Responsive */
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.chart-grid{grid-template-columns:1fr}.insights-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.layout{flex-direction:column}.sidebar{width:100%;padding:16px;border-right:none;border-bottom:1px solid #2A2A2A}.main{padding:16px}.kpi-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo"><span>D</span>DashBoard</div>
+      <nav class="sidebar-nav">
+        <a href="#" class="active">📊 業績總覽</a>
+        <a href="#">📈 趨勢分析</a>
+        <a href="#">📋 資料明細</a>
+        <a href="#">⚙️ 設定</a>
+      </nav>
+      <div class="sidebar-footer">
+        資料來源：test_業績.xlsx · 各部門業績<br>
+        更新時間：{{ now }}
+      </div>
+    </aside>
+    <!-- Main -->
+    <main class="main">
+      <div class="page-header">
+        <h1>📊 各部門業績戰情表</h1>
+        <p>基於實際上傳資料自動生成 · 共 {{ data.length }} 筆記錄 · 3 個部門</p>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card gain">
+          <div class="kpi-label">總營業額</div>
+          <div class="kpi-value">{{ totalRevenue.toLocaleString() }} <span class="unit">萬</span></div>
+          <div class="kpi-change up">▲ 涵蓋 3 個部門</div>
+          <div class="kpi-mini-chart" :id="'mini-total'"></div>
+        </div>
+        <div class="kpi-card neutral">
+          <div class="kpi-label">部門數</div>
+          <div class="kpi-value">3 <span class="unit">個</span></div>
+          <div class="kpi-change up">業務部 · 行銷部 · 研發部</div>
+        </div>
+        <div class="kpi-card" :class="avgGrowth >= 0 ? 'gain' : 'loss'">
+          <div class="kpi-label">平均成長率</div>
+          <div class="kpi-value">{{ avgGrowth.toFixed(1) }} <span class="unit">%</span></div>
+          <div class="kpi-change" :class="avgGrowth >= 0 ? 'up' : 'down'">
+            {{ avgGrowth >= 0 ? '▲' : '▼' }} 較前期
+          </div>
+        </div>
+        <div class="kpi-card gain">
+          <div class="kpi-label">最高業績部門</div>
+          <div class="kpi-value">{{ topDept.name }} <span class="unit">· {{ topDept.amount.toLocaleString() }}萬</span></div>
+          <div class="kpi-change up">🏆 冠軍部門</div>
+        </div>
+      </div>
+
+      <!-- Chart Grid -->
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">🏢 各部門業績總額 <span class="badge">bar</span></div>
+          <div class="chart-container" id="chart-bar"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">📈 各部門月度趨勢 <span class="badge">line</span></div>
+          <div class="chart-container" id="chart-line"></div>
+        </div>
+        <div class="chart-card chart-full">
+          <div class="chart-title">📊 成長率分布 <span class="badge">scatter</span></div>
+          <div class="chart-container" id="chart-scatter"></div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-section">
+        <div class="table-card">
+          <div class="section-title">📋 完整資料明細</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>部門</th>
+                <th>月份</th>
+                <th style="text-align:right">金額（萬）</th>
+                <th style="text-align:right">成長率（%）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, i) in data" :key="i">
+                <td>{{ row.部門 }}</td>
+                <td>{{ row.月份 }}</td>
+                <td class="num">{{ row.金額.toLocaleString() }}</td>
+                <td class="num" :class="row.成長率 >= 0 ? 'gain' : 'loss'">
+                  {{ row.成長率 >= 0 ? '+' : '' }}{{ row.成長率.toFixed(1) }}%
+                </td>
+              </tr>
+              <!-- Totals row -->
+              <tr style="background:rgba(0,212,170,0.06);font-weight:600;border-top:2px solid #00D4AA">
+                <td colspan="2" style="color:#00D4AA">合計</td>
+                <td class="num" style="color:#00D4AA">{{ totalRevenue.toLocaleString() }}</td>
+                <td class="num" style="color:#9CA3AF">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="insights-section">
+        <div class="insights-card">
+          <div class="section-title">💡 資料洞察</div>
+          <div class="insights-grid">
+            <div class="insight-item">
+              <span class="emoji">🏆</span>
+              <strong>業務部</strong> 以 {{ deptTotal['業務部'].toLocaleString() }} 萬總額位居第一，佔整體 {{ (deptTotal['業務部']/totalRevenue*100).toFixed(1) }}%
+            </div>
+            <div class="insight-item">
+              <span class="emoji">📈</span>
+              最高成長來自 <strong>行銷部 5 月</strong>（+15.2%），該部門呈穩定上升趨勢
+            </div>
+            <div class="insight-item">
+              <span class="emoji">⚠️</span>
+              <strong>研發部</strong> 7 月出現 -5.3% 負成長，但後續兩個月已回升至 +7.6%
+            </div>
+            <div class="insight-item">
+              <span class="emoji">📊</span>
+              三部門總業績 <strong>{{ totalRevenue.toLocaleString() }} 萬</strong>，平均每部門 {{ (totalRevenue/3).toFixed(0) }} 萬
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const {createApp,ref,computed,onMounted} = Vue;
+
+const RAW_DATA = [
+  {部門:'業務部',月份:'2024-01',金額:850,成長率:12.5},
+  {部門:'業務部',月份:'2024-02',金額:920,成長率:8.3},
+  {部門:'業務部',月份:'2024-03',金額:780,成長率:-2.1},
+  {部門:'行銷部',月份:'2024-04',金額:450,成長率:5.7},
+  {部門:'行銷部',月份:'2024-05',金額:510,成長率:15.2},
+  {部門:'行銷部',月份:'2024-06',金額:620,成長率:9.8},
+  {部門:'研發部',月份:'2024-07',金額:320,成長率:-5.3},
+  {部門:'研發部',月份:'2024-08',金額:410,成長率:3.1},
+  {部門:'研發部',月份:'2024-09',金額:380,成長率:7.6}
+];
+
+const app = createApp({
+  setup(){
+    const now = ref(new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
+    const data = ref(RAW_DATA);
+
+    const deptTotal = computed(()=>{
+      const map = {};
+      data.value.forEach(r=>{map[r.部門]=(map[r.部門]||0)+r.金額});
+      return map;
+    });
+
+    const totalRevenue = computed(()=>Object.values(deptTotal.value).reduce((a,b)=>a+b,0));
+
+    const avgGrowth = computed(()=>{
+      const rates = data.value.map(r=>r.成長率);
+      return rates.reduce((a,b)=>a+b,0)/rates.length;
+    });
+
+    const topDept = computed(()=>{
+      let best={name:'',amount:0};
+      Object.entries(deptTotal.value).forEach(([name,amount])=>{
+        if(amount>best.amount) best={name,amount};
+      });
+      return best;
+    });
+
+    const deptNames = computed(()=>Object.keys(deptTotal.value));
+    const barData = computed(()=>deptNames.value.map(d=>({name:d,value:deptTotal.value[d]})));
+
+    const months = computed(()=>{
+      const set = new Set();
+      data.value.forEach(r=>set.add(r.月份));
+      return Array.from(set).sort();
+    });
+
+    const lineSeries = computed(()=>{
+      const depts = deptNames.value;
+      return depts.map(dept=>{
+        const map = {};
+        data.value.filter(r=>r.部門===dept).forEach(r=>{map[r.月份]=r.金額});
+        return {name:dept,data:months.value.map(m=>map[m]||null)};
+      });
+    });
+
+    function initCharts(){
+      // Bar chart
+      const barChart = echarts.init(document.getElementById('chart-bar'));
+      barChart.setOption({
+        tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:'rgba(20,20,20,0.95)',borderColor:'#2A2A2A',textStyle:{color:'#E5E7EB',fontSize:12}},
+        grid:{left:50,right:16,top:32,bottom:28},
+        xAxis:{type:'category',data:barData.value.map(d=>d.name),axisLabel:{color:'#9CA3AF',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},
+        yAxis:{type:'value',name:'萬',nameTextStyle:{color:'#6B7280',fontSize:11},axisLabel:{color:'#9CA3AF',fontSize:11},splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}}},
+        series:[{
+          type:'bar',
+          data:barData.value.map((d,i)=> ({
+            value:d.value,
+            itemStyle:{color:['#00D4AA','#6366F1','#FFB800'][i],borderRadius:[4,4,0,0]}
+          })),
+          barWidth:'45%',
+          label:{show:true,position:'top',color:'#D1D5DB',fontSize:12,fontWeight:600,formatter:p=>p.value.toLocaleString()}
+        }]
+      });
+
+      // Line chart
+      const colorMap = {'業務部':'#00D4AA','行銷部':'#6366F1','研發部':'#FFB800'};
+      const lineChart = echarts.init(document.getElementById('chart-line'));
+      lineChart.setOption({
+        tooltip:{trigger:'axis',backgroundColor:'rgba(20,20,20,0.95)',borderColor:'#2A2A2A',textStyle:{color:'#E5E7EB',fontSize:12}},
+        legend:{data:deptNames.value,textStyle:{color:'#9CA3AF',fontSize:11},bottom:0},
+        grid:{left:50,right:16,top:16,bottom:40},
+        xAxis:{type:'category',data:months.value,axisLabel:{color:'#9CA3AF',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},
+        yAxis:{type:'value',name:'萬',nameTextStyle:{color:'#6B7280',fontSize:11},axisLabel:{color:'#9CA3AF',fontSize:11},splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}}},
+        series:lineSeries.value.map(s=>({
+          name:s.name,
+          type:'line',
+          data:s.data,
+          smooth:true,
+          symbol:'circle',
+          symbolSize:6,
+          lineStyle:{width:2.5,color:colorMap[s.name]},
+          itemStyle:{color:colorMap[s.name]},
+          areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:colorMap[s.name]+'33'},{offset:1,color:colorMap[s.name]+'00'}]}},
+          label:{show:true,position:'top',color:'#D1D5DB',fontSize:10,fontWeight:500,formatter:p=>p.value}
+        }))
+      });
+
+      // Scatter: 成長率分布
+      const scatterChart = echarts.init(document.getElementById('chart-scatter'));
+      const scatterData = deptNames.value.map(dept=>{
+        const pts = data.value.filter(r=>r.部門===dept).map(r=>[r.金額,r.成長率,r.月份]);
+        return {name:dept,data:pts};
+      });
+      scatterChart.setOption({
+        tooltip:{trigger:'item',formatter:p=>`${p.seriesName}<br>${p.value[2]}<br>金額: ${p.value[0]}萬<br>成長率: ${p.value[1]>=0?'+':''}${p.value[1]}%`,backgroundColor:'rgba(20,20,20,0.95)',borderColor:'#2A2A2A',textStyle:{color:'#E5E7EB',fontSize:12}},
+        legend:{data:deptNames.value,textStyle:{color:'#9CA3AF',fontSize:11},bottom:0},
+        grid:{left:50,right:16,top:16,bottom:40},
+        xAxis:{type:'value',name:'金額（萬）',nameTextStyle:{color:'#6B7280',fontSize:11},axisLabel:{color:'#9CA3AF',fontSize:11},splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}}},
+        yAxis:{type:'value',name:'成長率（%）',nameTextStyle:{color:'#6B7280',fontSize:11},axisLabel:{color:'#9CA3AF',fontSize:11},splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}}},
+        series:scatterData.map(s=>({
+          name:s.name,
+          type:'scatter',
+          data:s.data,
+          symbolSize:14,
+          itemStyle:{color:colorMap[s.name]},
+          label:{show:true,formatter:p=>p.value[2],color:'#9CA3AF',fontSize:10,position:'top'}
+        }))
+      });
+
+      // Mini sparkline for total KPI
+      const mini = echarts.init(document.getElementById('mini-total'));
+      mini.setOption({
+        grid:{left:0,right:0,top:0,bottom:0},
+        xAxis:{show:false,type:'category',data:months.value},
+        yAxis:{show:false,min:'dataMin',max:'dataMax'},
+        series:[{
+          type:'line',data:months.value.map(m=>{
+            let sum=0;data.value.filter(r=>r.月份===m).forEach(r=>sum+=r.金額);return sum;
+          }),smooth:true,symbol:'none',lineStyle:{width:1.5,color:'#00D4AA'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#00D4AA44'},{offset:1,color:'#00D4AA00'}]}}
+        }]
+      });
+
+      // Resize handler
+      window.addEventListener('resize',()=>{
+        barChart.resize(); lineChart.resize(); scatterChart.resize(); mini.resize();
+      });
+    }
+
+    onMounted(()=>{
+      setTimeout(initCharts, 100);
+    });
+
+    return {now,data,totalRevenue,avgGrowth,topDept,deptTotal};
+  }
+});
+
+app.mount('#app');
+</script>
+</body>
+</html>

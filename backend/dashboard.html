@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>各部門業績戰情表</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0D0D0D;
+  --surface: #141414;
+  --surface2: #1A1A1A;
+  --surface3: #222;
+  --border: #2A2A2A;
+  --fg: #E8E8E8;
+  --fg-muted: #888;
+  --accent: #00D4AA;
+  --gain: #00D4AA;
+  --loss: #FF4757;
+  --warning: #FFB800;
+  --sidebar-w: 220px;
+  --radius: 8px;
+}
+body { background: var(--bg); color: var(--fg); font-family: 'Inter', -apple-system, system-ui, sans-serif; min-height: 100vh; }
+.sidebar {
+  position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 24px 16px; z-index: 100; overflow-y: auto;
+}
+.sidebar .logo { font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 32px; letter-spacing: 0.5px; }
+.sidebar .logo small { display: block; font-size: 11px; color: var(--fg-muted); font-weight: 400; margin-top: 2px; }
+.sidebar nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 4px; border-radius: var(--radius);
+  color: var(--fg-muted); text-decoration: none; font-size: 14px; transition: all 0.15s;
+}
+.sidebar nav a:hover, .sidebar nav a.active { background: var(--surface3); color: var(--fg); }
+.sidebar nav a.active { border-left: 2px solid var(--accent); color: var(--accent); }
+.main { margin-left: var(--sidebar-w); padding: 24px 32px; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px; position: relative; overflow: hidden;
+}
+.kpi-card .kpi-label { font-size: 12px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.kpi-card .kpi-value { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi-card .kpi-change { font-size: 12px; margin-top: 2px; }
+.kpi-card .kpi-change.up { color: var(--gain); }
+.kpi-card .kpi-change.down { color: var(--loss); }
+.kpi-card .mini-spark { position: absolute; bottom: 0; right: 0; width: 100px; height: 32px; opacity: 0.3; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; position: relative;
+}
+.chart-card.full { grid-column: 1 / -1; }
+.chart-card .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--fg); display: flex; align-items: center; gap: 6px; }
+.chart-card .chart-title .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--surface3); color: var(--fg-muted); font-weight: 400; }
+.chart-container { width: 100%; height: 260px; }
+.data-section {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 24px;
+}
+.data-section .section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  position: sticky; top: 0; background: var(--surface2); padding: 10px 12px;
+  text-align: left; font-weight: 600; color: var(--fg-muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+}
+.data-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.data-table tr:nth-child(even) td { background: var(--surface2); }
+.data-table tr:hover td { background: var(--surface3); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'Fira Code', 'Inter', monospace; }
+.data-table .gain { color: var(--gain); }
+.data-table .loss { color: var(--loss); }
+.insight-section {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 24px;
+}
+.insight-section .section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.insight-list { list-style: none; padding: 0; }
+.insight-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.6; }
+.insight-list li:last-child { border-bottom: none; }
+.insight-list li .emoji { margin-right: 8px; }
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 16px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="logo">
+      📊 戰情室
+      <small>業績仪表板</small>
+    </div>
+    <nav>
+      <a href="#" class="active">📈 概覽</a>
+      <a href="#">📋 報表</a>
+      <a href="#">⚙️ 設定</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h4 style="font-weight:600;font-size:20px;">各部門業績戰情表</h4>
+      <span style="font-size:12px;color:var(--fg-muted);">資料來源：test_業績.xlsx · 各部門業績</span>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card" v-for="kpi in kpiList" :key="kpi.label">
+        <div class="kpi-label">{{ kpi.label }}</div>
+        <div class="kpi-value" :style="{ color: kpi.color }">{{ kpi.value }}</div>
+        <div class="kpi-change" :class="kpi.changeClass">{{ kpi.change }}</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card full">
+        <div class="chart-title">📈 各部門業績 — 金額趨勢 <span class="badge">折線圖</span></div>
+        <div class="chart-container" ref="lineChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📊 部門 vs 金額 <span class="badge">長條圖</span></div>
+        <div class="chart-container" ref="barChart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🥧 部門佔比 <span class="badge">圓餅圖</span></div>
+        <div class="chart-container" ref="pieChart"></div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <div class="section-title">📋 資料明細</div>
+      <div style="max-height:320px;overflow-y:auto;border-radius:var(--radius);">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>部門</th>
+              <th>月份</th>
+              <th style="text-align:right;">金額</th>
+              <th style="text-align:right;">成長率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, i) in tableData" :key="i">
+              <td>{{ row.部門 }}</td>
+              <td>{{ row.月份 }}</td>
+              <td class="num">{{ row.金額 }}</td>
+              <td class="num" :class="row.成長率 >= 0 ? 'gain' : 'loss'">{{ row.成長率 >= 0 ? '+' : '' }}{{ row.成長率 }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="insight-section">
+      <div class="section-title">💡 洞察分析</div>
+      <ul class="insight-list">
+        <li v-for="(item, i) in insights" :key="i">
+          <span class="emoji">{{ item.emoji }}</span>{{ item.text }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted, nextTick } = Vue;
+
+const rawData = [
+  { 部門: '業務部', 月份: '2024-01', 金額: 850, 成長率: 12.5 },
+  { 部門: '業務部', 月份: '2024-02', 金額: 920, 成長率: 8.3 },
+  { 部門: '業務部', 月份: '2024-03', 金額: 780, 成長率: -2.1 },
+  { 部門: '行銷部', 月份: '2024-04', 金額: 450, 成長率: 5.7 },
+  { 部門: '行銷部', 月份: '2024-05', 金額: 510, 成長率: 15.2 },
+  { 部門: '行銷部', 月份: '2024-06', 金額: 620, 成長率: 9.8 },
+  { 部門: '研發部', 月份: '2024-07', 金額: 320, 成長率: -5.3 },
+  { 部門: '研發部', 月份: '2024-08', 金額: 410, 成長率: 3.1 },
+  { 部門: '研發部', 月份: '2024-09', 金額: 380, 成長率: 7.6 }
+];
+
+function deptSum(dept) {
+  return rawData.filter(r => r.部門 === dept).reduce((s, r) => s + r.金額, 0);
+}
+const depts = [...new Set(rawData.map(r => r.部門))];
+const total = depts.reduce((s, d) => s + deptSum(d), 0);
+const avgGrowth = rawData.reduce((s, r) => s + r.成長率, 0) / rawData.length;
+const topDept = depts.reduce((a, b) => deptSum(a) > deptSum(b) ? a : b);
+
+function monthLabel(m) {
+  const parts = m.split('-');
+  return parts[1] + '月';
+}
+
+const app = createApp({
+  setup() {
+    const lineChart = ref(null);
+    const barChart = ref(null);
+    const pieChart = ref(null);
+
+    const kpiList = [
+      { label: '總業績金額', value: total.toLocaleString(), color: 'var(--accent)', change: '3 個部門總和', changeClass: '' },
+      { label: '部門數', value: depts.length.toString(), color: '#60A5FA', change: '業務部 / 行銷部 / 研發部', changeClass: '' },
+      { label: '平均成長率', value: avgGrowth.toFixed(1) + '%', color: avgGrowth >= 0 ? 'var(--gain)' : 'var(--loss)', change: avgGrowth >= 0 ? '↑ 整體正向成長' : '↓ 整體衰退', changeClass: avgGrowth >= 0 ? 'up' : 'down' },
+      { label: '最佳部門', value: topDept, color: '#FBBF24', change: deptSum(topDept).toLocaleString() + ' 總金額', changeClass: 'up' }
+    ];
+
+    const tableData = rawData.map(r => ({
+      ...r,
+      月份: r.月份.replace('-', ' / ').replace('2024', '') + '月'
+    }));
+
+    const insights = [
+      { emoji: '🏆', text: `業務部以總金額 ${deptSum('業務部').toLocaleString()} 位居第一，佔總業績 ${(deptSum('業務部')/total*100).toFixed(0)}%。` },
+      { emoji: '📈', text: `行銷部連續三個月成長（5.7% → 15.2% → 9.8%），平均成長率 ${((5.7+15.2+9.8)/3).toFixed(1)}%，動能強勁。` },
+      { emoji: '⚠️', text: `研發部 7 月成長率 -5.3%，但 8-9 月已轉正回升至 ${3.1}% / ${7.6}%，值得持續關注。` },
+      { emoji: '📊', text: `業務部 2 月業績 ${920} 為全年度單月最高，3 月回落至 ${780}（-15.2%），需關注波動原因。` },
+      { emoji: '🔍', text: `各部門業績高峰月份不同：業務部在 2 月、行銷部在 6 月、研發部在 8 月，建議分散行銷資源。` }
+    ];
+
+    function initCharts() {
+      // --- Line Chart ---
+      const line = echarts.init(lineChart.value);
+      const deptColors = { '業務部': '#00D4AA', '行銷部': '#60A5FA', '研發部': '#FBBF24' };
+      const lineSeries = depts.map(d => ({
+        name: d,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2.5 },
+        data: rawData.filter(r => r.部門 === d).map(r => r.金額)
+      }));
+      line.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', backgroundColor: '#1A1A1A', borderColor: '#2A2A2A', textStyle: { color: '#E8E8E8' } },
+        legend: { data: depts, textStyle: { color: '#888' }, top: 0 },
+        grid: { left: 50, right: 20, bottom: 28, top: 36 },
+        xAxis: {
+          type: 'category',
+          data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月'],
+          axisLine: { lineStyle: { color: '#2A2A2A' } },
+          axisLabel: { color: '#888', fontSize: 11 },
+          splitLine: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          name: '金額',
+          nameTextStyle: { color: '#666', fontSize: 11 },
+          axisLine: { show: false },
+          axisLabel: { color: '#888', fontSize: 11 },
+          splitLine: { lineStyle: { color: '#2A2A2A', type: 'dashed' } }
+        },
+        series: lineSeries.map(s => ({ ...s, itemStyle: { color: deptColors[s.name] }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0,color:deptColors[s.name]+'30'},{offset:1,color:deptColors[s.name]+'00'}]) } })),
+        animationDuration: 800
+      });
+
+      // --- Bar Chart ---
+      const bar = echarts.init(barChart.value);
+      const barData = depts.map(d => ({ value: deptSum(d), itemStyle: { color: deptColors[d] } }));
+      bar.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', backgroundColor: '#1A1A1A', borderColor: '#2A2A2A', textStyle: { color: '#E8E8E8' }, formatter: p => `${p[0].name}<br/>金額：<b>${p[0].value.toLocaleString()}</b>` },
+        grid: { left: 50, right: 20, bottom: 28, top: 10 },
+        xAxis: {
+          type: 'category',
+          data: depts,
+          axisLine: { lineStyle: { color: '#2A2A2A' } },
+          axisLabel: { color: '#888', fontSize: 12 },
+          splitLine: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          axisLabel: { color: '#888', fontSize: 11 },
+          splitLine: { lineStyle: { color: '#2A2A2A', type: 'dashed' } }
+        },
+        series: [{
+          type: 'bar',
+          data: barData,
+          barWidth: '50%',
+          barMaxWidth: 60,
+          label: { show: true, position: 'top', color: '#888', fontSize: 11, formatter: p => p.value.toLocaleString() }
+        }],
+        animationDuration: 600
+      });
+
+      // --- Pie Chart ---
+      const pie = echarts.init(pieChart.value);
+      const pieData = depts.map(d => ({ name: d, value: deptSum(d), itemStyle: { color: deptColors[d] } }));
+      pie.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'item', backgroundColor: '#1A1A1A', borderColor: '#2A2A2A', textStyle: { color: '#E8E8E8' }, formatter: p => `${p.name}<br/>金額：<b>${p.value.toLocaleString()}</b>（${p.percent}%）` },
+        series: [{
+          type: 'pie',
+          radius: ['35%', '65%'],
+          center: ['50%', '55%'],
+          data: pieData,
+          label: { color: '#888', fontSize: 12, formatter: p => `${p.name}\n${p.percent}%` },
+          labelLine: { lineStyle: { color: '#2A2A2A' } },
+          emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' } }
+        }],
+        animationDuration: 600
+      });
+
+      window.addEventListener('resize', () => { line.resize(); bar.resize(); pie.resize(); });
+    }
+
+    onMounted(() => {
+      nextTick(() => initCharts());
+    });
+
+    return { kpiList, tableData, insights, lineChart, barChart, pieChart };
+  }
+});
+
+app.mount('#app');
+</script>
+</body>
+</html>
