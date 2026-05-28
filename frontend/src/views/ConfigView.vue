@@ -213,8 +213,8 @@ async function generate() {
     const result = await store.generateDashboard(store.userRefinements)
     progressPercent.value = 100
     progressText.value = '完成！'
-    // 直接導向到後端產生的 dashboard 頁面
-    window.location.href = result.dashboard_url
+    // 在新分頁開啟 dashboard，不影響目前頁面
+    window.open(result.dashboard_url, '_blank')
   } catch (e) {
     progressText.value = '生成失敗：' + (e?.message || '未知錯誤')
   } finally {

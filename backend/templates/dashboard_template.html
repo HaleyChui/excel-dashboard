@@ -212,6 +212,26 @@ window.addEventListener('resize', () => {
     });
   }, 200);
 });
+
+// ── Table Sort ──
+function sortTable(colIdx) {
+  const table = document.querySelector('.data-table');
+  if (!table) return;
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const isAsc = table.dataset.sortCol === String(colIdx) && table.dataset.sortDir === 'asc';
+  rows.sort((a, b) => {
+    let av = a.cells[colIdx].textContent.trim();
+    let bv = b.cells[colIdx].textContent.trim();
+    const an = parseFloat(av.replace(/,/g, ''));
+    const bn = parseFloat(bv.replace(/,/g, ''));
+    if (!isNaN(an) && !isNaN(bn)) return isAsc ? bn - an : an - bn;
+    return isAsc ? bv.localeCompare(av, 'zh-TW') : av.localeCompare(bv, 'zh-TW');
+  });
+  table.dataset.sortCol = colIdx;
+  table.dataset.sortDir = isAsc ? 'asc' : 'desc';
+  rows.forEach(r => tbody.appendChild(r));
+}
 </script>
 </body>
 </html>
