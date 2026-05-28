@@ -3,17 +3,18 @@ from flask_cors import CORS
 import os
 import uuid
 
-# Load env from ~/.hermes/.env (for gunicorn workers that don't inherit shell env)
-_env_path = os.path.expanduser('~/.hermes/.env')
-if os.path.exists(_env_path):
-    with open(_env_path) as _f:
-        for _line in _f:
-            _line = _line.strip()
-            if _line and not _line.startswith('#') and '=' in _line:
-                _k, _v = _line.split('=', 1)
-                _v = _v.strip().strip('"').strip("'")
-                if _v and not _v.startswith('***') and not os.environ.get(_k.strip()):
-                    os.environ[_k.strip()] = _v
+# Load env from ~/.hermes/.env
+if not os.environ.get('OPENROUTER_API_KEY'):
+    _env_path = os.path.expanduser('~/.hermes/.env')
+    if os.path.exists(_env_path):
+        with open(_env_path) as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    _v = _v.strip().strip('"').strip("'")
+                    if _v and not _v.startswith('***') and not os.environ.get(_k.strip()):
+                        os.environ[_k.strip()] = _v
 
 from models import init_db, save_version, get_versions, get_version_html, save_template, list_templates, get_template, _get_conn
 
@@ -25,6 +26,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ──────────────────────────── Session Store ────────────────────────────
 sessions = {}  # uuid -> {files: [...], sheets: [...], config: {...}}
+
+def _get_session(sid):
+    return sessions.get(sid)
 
 # ──────────────────────────── Routes ────────────────────────────
 
@@ -48,8 +52,8 @@ def templates_view():
 def upload_files():
     """接收多個 Excel 檔案，回傳每個檔案的 Sheet 清單 + 欄位預覽"""
     session_id = request.form.get('session_id') or str(uuid.uuid4())
-    if session_id not in sessions:
-        sessions[session_id] = {'files': [], 'sheets': {}}
+    if not _get_session(session_id):
+        sessions[session_id] = {'files': [], 'sheets': {}, 'suggestions': []}
 
     files = request.files.getlist('files')
     from parser import parse_excel
@@ -60,8 +64,10 @@ def upload_files():
         info = parse_excel(path)
         info['path'] = path
         info['filename'] = f.filename
-        sessions[session_id]['files'].append(info)
-        sessions[session_id]['sheets'][f.filename] = info
+        sess = _get_session(session_id)
+        sess['files'].append(info)
+        sess['sheets'][f.filename] = info
+        sessions[session_id] = sess
         results.append({
             'filename': f.filename,
             'sheets': [{k: v for k, v in s.items() if k != 'data'}
@@ -78,7 +84,7 @@ def get_sheet_preview():
     session_id = data['session_id']
     filename = data['filename']
     sheet_name = data['sheet_name']
-    file_info = sessions[session_id]['sheets'].get(filename)
+    file_info = sessions.get(session_id, {}).get('sheets', {}).get(filename)
     if not file_info:
         return jsonify({'error': 'file not found'}), 404
     for s in file_info['sheets']:
@@ -96,7 +102,7 @@ def analyze_data():
 
     selected_sheets = []
     for sel in selections:
-        file_info = sessions[session_id]['sheets'].get(sel['filename'])
+        file_info = sessions.get(session_id, {}).get('sheets', {}).get(sel['filename'])
         if file_info:
             for s in file_info['sheets']:
                 if s['name'] == sel['sheetName']:
@@ -123,13 +129,13 @@ def generate_dashboard():
         session_id = data['session_id']
         user_refinements = data.get('refinements', '')
 
-        suggestions = sessions[session_id].get('suggestions', [])
+        suggestions = sessions.get(session_id, {}).get('suggestions', [])
         if not suggestions:
             suggestions = _mock_suggest_from_sheets(session_id)
 
         # Collect actual data from all sheets in this session
         sheet_data = {}
-        sheets_info = sessions[session_id].get('sheets', {})
+        sheets_info = sessions.get(session_id, {}).get('sheets', {})
         for filename, info in sheets_info.items():
             for s in info.get('sheets', []):
                 key = f"{filename}/{s['name']}"
