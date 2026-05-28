@@ -1,83 +1,185 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>戰情表</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-    <style>
-      .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-weight: 400; font-size: 20px; display: inline-flex; vertical-align: middle; user-select: none; }
-    :root {
-      --bg: #0D0D0D; --surface: #141414; --surface-hover: #1A1A1A;
-      --border: #2A2A2A; --border-soft: #1F2937;
-      --gain: #00D4AA; --loss: #FF4757; --warning: #FFB800; --info: #5B8FF9;
-      --text: #FFFFFF; --text2: #AAAAAA; --text3: #828282;
-      --radius: 8px;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
-    .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-weight: 400; font-size: 20px; display: inline-flex; vertical-align: middle; user-select: none; }
-    .layout { display: flex; min-height: 100vh; }
-    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-    .sidebar-brand { padding: 0 16px 16px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-    .sidebar-brand h5 { font-size: 13px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 8px; margin: 0; }
-    .sidebar-section { padding: 8px 0; }
-    .sidebar-section-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 16px 4px; }
-    .src-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 16px; color: var(--text2); font-size: 12px; transition: background 0.15s; }
-    .src-item:hover { background: var(--surface-hover); }
-    .src-item .material-symbols-outlined { font-size: 16px; color: var(--gain); flex-shrink: 0; margin-top: 1px; }
-    .src-file { font-weight: 500; color: var(--text); }
-    .src-sheet { color: var(--text3); }
-    .main { flex: 1; padding: 20px 24px; max-width: 1200px; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .page-header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0; }
-    .meta-badges { display: flex; gap: 8px; }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--text2); border: 1px solid var(--border); }
-    .badge .material-symbols-outlined { font-size: 14px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color 0.15s; }
-    .kpi-card:hover { border-color: #3A3A3A; }
-    .kpi-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; color: var(--gain); line-height: 1.2; }
-    .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-    .chart-card-wrap { min-width: 0; }
-    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .chart-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-    .chart-icon { font-size: 18px; color: var(--gain); }
-    .chart-title { font-size: 13px; font-weight: 500; color: var(--text2); }
-    .chart-body { position: relative; }
-    .chart-canvas { width: 100%; height: 260px; }
-    .data-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
-    .data-table-scroll { max-height: 400px; overflow: auto; }
-    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .data-table th { position: sticky; top: 0; background: var(--surface-hover); color: var(--text3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; z-index: 1; }
-    .data-table th:hover { color: var(--text2); }
-    .data-table td { padding: 7px 12px; border-bottom: 1px solid var(--border-soft); color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap; }
-    .data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
-    .data-table tr:hover td { background: var(--surface-hover); }
-    .val-pos { color: var(--gain); }
-    .val-neg { color: var(--loss); }
-    .insights { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px; }
-    .insights h6 { font-size: 12px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 6px; margin: 0 0 8px 0; }
-    .insights ul { list-style: none; padding: 0; margin: 0; }
-    .insights li { padding: 5px 0; border-bottom: 1px solid var(--border-soft); font-size: 12px; line-height: 1.6; color: var(--text2); }
-    .insights li:last-child { border: none; }
-    .insights li .hl { color: var(--text); font-weight: 500; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    @media (max-width: 768px) {
-      .chart-grid { grid-template-columns: 1fr; }
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .sidebar { display: none; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>戰情表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #050816;
+  --bg2: #0B1120;
+  --surface: rgba(15,23,42,0.75);
+  --surface2: rgba(30,41,59,0.6);
+  --border: rgba(99,102,241,0.18);
+  --border2: rgba(99,102,241,0.35);
+  --gain: #10B981; --gain-dim: #065F46;
+  --loss: #EF4444; --loss-dim: #991B1B;
+  --warning: #F59E0B;
+  --info: #1A6FC4; --deep-info: #1E3A5F;
+  --text: #F3F4F6; --text2: #CBD5E1; --text3: #64748B;
+  --radius: 8px; --radius-lg: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(at 20% 0%, rgba(59,130,246,0.12) 0px, transparent 50%), radial-gradient(at 80% 50%, rgba(168,85,247,0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px; line-height: 1.5;
+  min-height: 100vh;
+}
+/* ── Layout ── */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+.sidebar-brand { padding: 8px 16px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.sidebar-brand h5 { font-size: 13px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 8px; margin: 0; }
+.sidebar-brand .brand-icon { color: var(--info); font-size: 22px; }
+.sidebar-section { padding: 6px 0; }
+.sidebar-section-title { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 16px 4px; }
+.src-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 16px; color: var(--text2); font-size: 12px; border-radius: 0; transition: background 0.15s; }
+.src-item:hover { background: var(--surface2); }
+.src-item .material-symbols-outlined { font-size: 16px; color: var(--gain); flex-shrink: 0; margin-top: 1px; }
+.src-file { font-weight: 600; color: var(--text); }
+.src-sheet { color: var(--text3); font-size: 11px; }
+.sidebar-stat { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; color: var(--text3); }
+.sidebar-stat .material-symbols-outlined { font-size: 16px; color: var(--text3); }
+.main { flex: 1; padding: 20px 28px; max-width: 1320px; }
+/* ── Page Header ── */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.page-header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text); }
+.page-header h1 .material-symbols-outlined { font-size: 24px; color: var(--info); }
+.meta-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--text2); border: 1px solid var(--border); }
+.badge .material-symbols-outlined { font-size: 14px; color: var(--gain); }
+/* ── KPI Cards ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-card {
+  background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.7));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  position: relative; overflow: hidden;
+  transition: all 0.3s ease;
+}
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--info), #60a5fa); opacity: 0.8; }
+.kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.kpi-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.kpi-delta { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.kpi-delta.up { color: var(--gain); }
+.kpi-delta.down { color: var(--loss); }
+/* ── Chart Grid ── */
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px; }
+.chart-card-wrap { min-width: 0; }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.chart-card:hover { border-color: var(--border2); }
+.chart-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.chart-icon { font-size: 18px; color: var(--gain); }
+.chart-title { font-size: 13px; font-weight: 500; color: var(--text2); }
+.chart-body { position: relative; }
+.chart-canvas { width: 100%; height: 260px; }
+/* ── Table Controls ── */
+.table-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.table-search { flex: 1; min-width: 200px; max-width: 360px; }
+.table-search input {
+  width: 100%; padding: 7px 12px 7px 34px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s;
+}
+.table-search input:focus { outline: none; border-color: var(--border2); }
+.table-search { position: relative; }
+.table-search .material-symbols-outlined { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--text3); pointer-events: none; }
+.table-info { font-size: 11px; color: var(--text3); }
+/* ── Data Table ── */
+.data-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.data-table-scroll { max-height: 420px; overflow: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th {
+  position: sticky; top: 0; z-index: 2;
+  background: rgba(15,23,42,0.95);
+  color: var(--text3); font-weight: 600; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 10px 12px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+.data-table th:hover { color: var(--text); }
+.data-table th .sort-icon { display: none; font-size: 12px; margin-left: 4px; vertical-align: middle; }
+.data-table th.sorted .sort-icon { display: inline-flex; }
+.data-table td {
+  padding: 8px 12px; border-bottom: 1px solid rgba(99,102,241,0.08);
+  color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: nowrap;
+}
+.data-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.data-table tr:hover td { background: rgba(99,102,241,0.06); }
+/* ── Pagination ── */
+.table-pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--border); }
+.page-info { font-size: 11px; color: var(--text3); }
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  padding: 4px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
+}
+.page-btn:hover { border-color: var(--border2); color: var(--text); }
+.page-btn.active { background: var(--info); border-color: var(--info); color: #fff; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* ── Insights ── */
+.insights { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 20px; }
+.insights h6 { font-size: 12px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 6px; margin: 0 0 10px 0; }
+.insights ul { list-style: none; padding: 0; margin: 0; }
+.insights li { padding: 7px 0; border-bottom: 1px solid rgba(99,102,241,0.08); font-size: 12px; line-height: 1.65; color: var(--text2); }
+.insights li:last-child { border: none; }
+.insights li .hl { color: var(--text); font-weight: 600; }
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+}
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.kpi-card, .chart-card-wrap, .data-table-wrap, .insights { animation: fadeIn 0.4s ease both; }
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.1s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+.kpi-card:nth-child(4) { animation-delay: 0.2s; }
+</style>
 </head>
 <body>
 <div id="app">
@@ -85,7 +187,7 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <h5><span class="material-symbols-outlined">monitoring</span>戰情表</h5>
+      <h5><span class="material-symbols-outlined brand-icon">monitoring</span>戰情表</h5>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-title">資料來源</div>
@@ -99,9 +201,13 @@
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-title">統計</div>
-      <div class="src-item">
+      <div class="sidebar-stat">
         <span class="material-symbols-outlined">table_rows</span>
-        <div>{{ rowCount.toLocaleString() }} 列資料</div>
+        <span>{{ rowCount.toLocaleString() }} 列資料</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <span>{{ chartCount }} 張圖表</span>
       </div>
     </div>
   </nav>
@@ -109,7 +215,7 @@
   <!-- Main Content -->
   <main class="main">
     <div class="page-header">
-      <h1><span class="material-symbols-outlined" style="color:var(--gain)">dashboard</span>資料儀表板</h1>
+      <h1><span class="material-symbols-outlined">dashboard</span>資料儀表板</h1>
       <div class="meta-badges">
         <span class="badge"><span class="material-symbols-outlined">dataset</span> {{ totalSheets }} 個工作表</span>
         <span class="badge"><span class="material-symbols-outlined">bar_chart</span> {{ chartCount }} 張圖表</span>
@@ -130,7 +236,42 @@
     </div>
 
     <!-- Data Table -->
-    __TABLE_HTML__
+    <div class="table-controls">
+      <div class="table-search">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="搜尋表格資料..." v-model="searchQuery" @input="onSearch" />
+      </div>
+      <div class="table-info">{{ filteredRowCount }} / {{ totalRowCount }} 筆</div>
+    </div>
+    <div class="data-table-wrap">
+      <div class="data-table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th v-for="(h, i) in tableHeaders" :key="i" :class="{ sorted: sortCol === i }" @click="sortTable(i)">
+                {{ h }}
+                <span class="sort-icon material-symbols-outlined">{{ sortCol === i ? (sortAsc ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, ri) in displayedRows" :key="ri">
+              <td v-for="(h, ci) in tableHeaders" :key="ci" :title="formatCell(row[h])">{{ formatCell(row[h]) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination" v-if="totalPages > 1">
+        <div class="page-info">第 {{ currentPage }} / {{ totalPages }} 頁</div>
+        <div class="page-btns">
+          <button class="page-btn" @click="currentPage = 1" :disabled="currentPage <= 1">«</button>
+          <button class="page-btn" @click="currentPage--" :disabled="currentPage <= 1">‹</button>
+          <button class="page-btn" v-for="p in pageButtons" :key="p" :class="{ active: p === currentPage }" @click="currentPage = p">{{ p }}</button>
+          <button class="page-btn" @click="currentPage++" :disabled="currentPage >= totalPages">›</button>
+          <button class="page-btn" @click="currentPage = totalPages" :disabled="currentPage >= totalPages">»</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Insights -->
     <div class="insights" v-if="insights.length">
@@ -139,62 +280,126 @@
         <li v-for="(ins,i) in insights" :key="i" v-html="ins"></li>
       </ul>
     </div>
+    <div style="text-align:center;padding:12px;color:var(--text3);font-size:11px">
+      <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">schedule</span>
+      產出於 {{ generatedAt }}
+    </div>
   </main>
 </div>
 </div>
 
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
-const { createApp, ref, onMounted } = Vue;
-
+const { createApp, ref, computed, onMounted } = Vue;
 const SHEET_DATA = __SHEET_DATA__;
 const SOURCES = __SOURCES__;
 const KPIS = __KPIS__;
 const TOTAL_ROWS = __TOTAL_ROWS__;
 const CHART_COUNT = __CHART_COUNT__;
 
+// Build table data from all sheets
+const _allRows = [];
+for (const [key, rows] of Object.entries(SHEET_DATA)) {
+  if (!rows || !rows.length) continue;
+  const sname = key.split('/').pop();
+  for (const r of rows) { _allRows.push(Object.assign({ _sheet: sname }, r)); }
+}
+const _headers = _allRows.length ? Object.keys(_allRows[0]).filter(k => !k.startsWith('_')) : [];
+
 createApp({
   setup() {
-    return {
-      sources: SOURCES,
-      kpis: ref(KPIS),
-      insights: ref([]),
-      rowCount: TOTAL_ROWS,
-      totalSheets: SOURCES.length,
-      chartCount: CHART_COUNT,
+    const searchQuery = ref('');
+    const sortCol = ref(null);
+    const sortAsc = ref(true);
+    const currentPage = ref(1);
+    const pageSize = 20;
+
+    const filteredRows = computed(() => {
+      let rows = _allRows;
+      if (searchQuery.value.trim()) {
+        const q = searchQuery.value.toLowerCase();
+        rows = rows.filter(r => _headers.some(h => String(r[h] || '').toLowerCase().includes(q)));
+      }
+      return rows;
+    });
+
+    const displayedRows = computed(() => {
+      let rows = [...filteredRows.value];
+      if (sortCol.value !== null) {
+        const h = _headers[sortCol.value];
+        rows.sort((a, b) => {
+          let av = String(a[h] || ''), bv = String(b[h] || '');
+          const an = parseFloat(av.replace(/,/g, '')), bn = parseFloat(bv.replace(/,/g, ''));
+          if (!isNaN(an) && !isNaN(bn)) return sortAsc.value ? an - bn : bn - an;
+          return sortAsc.value ? av.localeCompare(bv, 'zh-TW') : bv.localeCompare(av, 'zh-TW');
+        });
+      }
+      const start = (currentPage.value - 1) * pageSize;
+      return rows.slice(start, start + pageSize);
+    });
+
+    const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)));
+    const filteredRowCount = computed(() => filteredRows.value.length);
+
+    const pageButtons = computed(() => {
+      const total = totalPages.value, cur = currentPage.value;
+      const pages = [];
+      for (let p = Math.max(1, cur - 2); p <= Math.min(total, cur + 2); p++) pages.push(p);
+      return pages;
+    });
+
+    const formatCell = (v) => {
+      if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'number') return Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, {maximumFractionDigits: 2});
+      return String(v);
     };
-  },
-  mounted() {
-    const ins = [];
-    for (const [key, rows] of Object.entries(SHEET_DATA)) {
-      if (!rows || !rows.length) continue;
-      const sname = key.split('/').pop();
-      const numKeys = Object.keys(rows[0]).filter(k => typeof rows[0][k] === 'number');
-      for (const n of numKeys) {
-        const vals = rows.map(r => r[n]).filter(v => typeof v === 'number');
-        if (vals.length > 0) {
-          const sum = vals.reduce((a,b) => a+b, 0);
-          const max = Math.max(...vals);
-          const min = Math.min(...vals);
-          const avg = sum / vals.length;
-          if (max > avg * 1.5) {
-            ins.push('📌 <span class="hl">' + sname + '</span> 的 <span class="hl">' + n + '</span> 最大值為 ' + max.toLocaleString() + '，遠高於平均值 ' + avg.toFixed(1));
-          }
-          if (min < 0) {
-            ins.push('⚠️ <span class="hl">' + sname + '</span> 的 <span class="hl">' + n + '</span> 出現負值（' + min.toLocaleString() + '），需特別關注');
+
+    const sortTable = (colIdx) => {
+      if (sortCol.value === colIdx) { sortAsc.value = !sortAsc.value; }
+      else { sortCol.value = colIdx; sortAsc.value = true; }
+      currentPage.value = 1;
+    };
+
+    const onSearch = () => { currentPage.value = 1; };
+
+    // Insights
+    const insights = ref([]);
+    onMounted(() => {
+      // Compute insights
+      const ins = [];
+      for (const [key, rows] of Object.entries(SHEET_DATA)) {
+        if (!rows || !rows.length) continue;
+        const sname = key.split('/').pop();
+        const numKeys = Object.keys(rows[0]).filter(k => typeof rows[0][k] === 'number');
+        for (const n of numKeys) {
+          const vals = rows.map(r => r[n]).filter(v => typeof v === 'number');
+          if (vals.length > 0) {
+            const max = Math.max(...vals), min = Math.min(...vals), avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+            if (max > avg * 1.5) ins.push('📌 <span class="hl">' + sname + '</span> 的 <span class="hl">' + n + '</span> 最大值 ' + max.toLocaleString() + ' 高於平均 ' + avg.toFixed(1) + ' 達 ' + ((max/avg-1)*100).toFixed(0) + '%');
+            if (min < 0) ins.push('⚠️ <span class="hl">' + sname + '</span> 的 <span class="hl">' + n + '</span> 有負值（' + min.toLocaleString() + '）');
           }
         }
       }
-    }
-    ins.push('📊 共分析 <span class="hl">' + TOTAL_ROWS.toLocaleString() + '</span> 列資料、<span class="hl">' + SOURCES.length + '</span> 個工作表、產出 <span class="hl">' + CHART_COUNT + '</span> 張圖表');
-    this.insights = ins.slice(0, 6);
-    initCharts();
-  },
-  methods: {
-    copyLink() {
-      navigator.clipboard.writeText(window.location.href);
-      alert('連結已複製');
-    }
+      ins.push('📊 共 <span class="hl">' + TOTAL_ROWS.toLocaleString() + '</span> 列資料 · <span class="hl">' + SOURCES.length + '</span> 工作表 · <span class="hl">' + CHART_COUNT + '</span> 張圖表');
+      insights.value = ins.slice(0, 8);
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Init ECharts after DOM is ready
+      setTimeout(() => { initCharts(); }, 100);
+    });
+
+    return {
+      sources: SOURCES, kpis: ref(KPIS), insights,
+      rowCount: TOTAL_ROWS, totalRowCount: TOTAL_ROWS,
+      totalSheets: SOURCES.length, chartCount: CHART_COUNT,
+      tableHeaders: _headers,
+      searchQuery, sortCol, sortAsc, currentPage, pageSize,
+      filteredRows, displayedRows, totalPages, filteredRowCount, pageButtons,
+      formatCell, sortTable, onSearch,
+      generatedAt: new Date().toLocaleString('zh-TW'),
+    };
   }
 }).mount('#app');
 
@@ -212,26 +417,6 @@ window.addEventListener('resize', () => {
     });
   }, 200);
 });
-
-// ── Table Sort ──
-function sortTable(colIdx) {
-  const table = document.querySelector('.data-table');
-  if (!table) return;
-  const tbody = table.querySelector('tbody');
-  const rows = Array.from(tbody.querySelectorAll('tr'));
-  const isAsc = table.dataset.sortCol === String(colIdx) && table.dataset.sortDir === 'asc';
-  rows.sort((a, b) => {
-    let av = a.cells[colIdx].textContent.trim();
-    let bv = b.cells[colIdx].textContent.trim();
-    const an = parseFloat(av.replace(/,/g, ''));
-    const bn = parseFloat(bv.replace(/,/g, ''));
-    if (!isNaN(an) && !isNaN(bn)) return isAsc ? bn - an : an - bn;
-    return isAsc ? bv.localeCompare(av, 'zh-TW') : av.localeCompare(bv, 'zh-TW');
-  });
-  table.dataset.sortCol = colIdx;
-  table.dataset.sortDir = isAsc ? 'asc' : 'desc';
-  rows.forEach(r => tbody.appendChild(r));
-}
 </script>
 </body>
 </html>
