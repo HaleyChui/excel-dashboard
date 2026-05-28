@@ -196,7 +196,11 @@ def view_dashboard(session_id, version):
     html = get_version_html(session_id, int(version.lstrip('v')))
     if not html:
         return 'Dashboard not found', 404
-    return html
+    resp = make_response(html)
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 @app.route('/api/templates', methods=['GET'])
