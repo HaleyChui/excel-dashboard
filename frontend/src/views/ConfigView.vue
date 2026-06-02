@@ -115,6 +115,7 @@
       </span>
       <span v-else>🚀 生成戰情表</span>
     </button>
+    <button class="btn-sh btn-sh-outline btn-sh-lg" @click="previewDashboard" :disabled="!store.generatedDashboardUrl">👁 預覽</button>
   </div>
 
   <!-- Progress bar -->
@@ -213,15 +214,20 @@ async function generate() {
     const result = await store.generateDashboard(store.userRefinements)
     progressPercent.value = 100
     progressText.value = '完成！'
-    // 在新分頁開啟 dashboard，不影響目前頁面
-    window.open(result.dashboard_url, '_blank')
+    // 儲存生成的儀表板 URL，以供預覽按鈕使用
+    store.generatedDashboardUrl = result.dashboard_url
   } catch (e) {
     progressText.value = '生成失敗：' + (e?.message || '未知錯誤')
   } finally {
     generating.value = false
   }
 }
-</script>
+
+function previewDashboard() {
+  if (store.generatedDashboardUrl) {
+    window.open(store.generatedDashboardUrl, '_blank')
+  }
+}</script>
 
 <style scoped>
 .suggestion-card {

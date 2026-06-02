@@ -11,6 +11,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const suggestions = ref([])     // AI 建議的圖表
   const userRefinements = ref('') // user 文字補充
   const versions = ref([])        // 版本歷史
+  const generatedDashboardUrl = ref('') // 生成的儀表板 URL
   const undoStack = ref([])       // Undo/Redo
   const redoStack = ref([])
 
@@ -48,6 +49,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       refinements
     })
     versions.value.push(data.version)
+    generatedDashboardUrl.value = data.dashboard_url
     return data
   }
 
@@ -98,7 +100,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   return {
     sessionId, files, selectedSheets, suggestions,
-    userRefinements, versions, undoStack, redoStack,
+    userRefinements, versions, generatedDashboardUrl, undoStack, redoStack,
     uploadFiles, analyzeData, generateDashboard,
     regenerateComponent, fetchVersions,
     pushUndo, undo, redo

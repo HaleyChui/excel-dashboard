@@ -160,6 +160,13 @@ body {
 }
 .btn-sh-ghost:hover { background: var(--bg-hover); color: var(--fg); }
 
+.btn-sh-outline {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+}
+.btn-sh-outline:hover { background: var(--bg-hover); color: var(--fg); }
+
 .btn-sh-danger {
   background: var(--danger);
   color: #FFFFFF;
