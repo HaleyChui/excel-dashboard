@@ -46,7 +46,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
     const { data } = await axios.post(`${API}/generate`, {
       session_id: sessionId.value,
       selections: selectedSheets.value,
-      refinements
+      refinements,
+      suggestions: suggestions.value
     })
     versions.value.push(data.version)
     generatedDashboardUrl.value = data.dashboard_url

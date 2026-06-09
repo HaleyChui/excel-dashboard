@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+<!-- Gridstack.js for drag-to-reposition -->
+<link href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <style>
 :root {
@@ -83,21 +86,47 @@ body {
 .kpi-delta.up { color: var(--gain); }
 .kpi-delta.down { color: var(--loss); }
 /* ── Chart Grid ── */
-.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px; }
-.chart-card-wrap { min-width: 0; }
+.chart-grid {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+.chart-card-wrap {
+  min-width: 0;
+  transition: transform 0.2s;
+}
+.grid-stack-item-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 .chart-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .chart-card:hover { border-color: var(--border2); }
-.chart-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.chart-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .chart-icon { font-size: 18px; color: var(--gain); }
 .chart-title { font-size: 13px; font-weight: 500; color: var(--text2); }
-.chart-body { position: relative; }
-.chart-canvas { width: 100%; height: 260px; }
+.chart-body { position: relative; flex: 1; min-height: 200px; }
+.chart-canvas { width: 100%; height: 100%; min-height: 220px; }
+
+/* Gridstack handle style */
+.grid-stack-item-content .chart-card {
+  cursor: grab;
+}
+.grid-stack-item-content .chart-card:active {
+  cursor: grabbing;
+}
+.grid-stack-item.ui-resizable {
+  background: transparent;
+}
 /* ── Table Controls ── */
 .table-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .table-search { flex: 1; min-width: 200px; max-width: 360px; }
@@ -231,7 +260,7 @@ body {
     </div>
 
     <!-- Chart Grid -->
-    <div class="chart-grid">
+    <div class="chart-grid grid-stack" id="chartGrid" data-gs-auto="true" data-gs-animate="true" data-gs-cell-height="260" data-gs-column="12" data-gs-min-width="600">
       __CHART_DIVS__
     </div>
 
@@ -407,6 +436,60 @@ function initCharts() {
 __CHART_SCRIPTS__
 }
 
+// Initialize Gridstack for drag-to-reposition
+let gridStack = null;
+function initGridstack() {
+  if (typeof GridStack !== 'undefined') {
+    const options = {
+      column: 12,
+      cellHeight: 260,
+      animate: true,
+      float: true,
+      minRow: 5,
+      draggable: {
+        handle: '.chart-header',
+        scroll: true,
+        appendTo: 'body'
+      },
+      resizable: {
+        handles: 'e, se, s, sw, w'
+      }
+    };
+    gridStack = GridStack.init(options, '#chartGrid');
+    
+    // Handle chart resize on drag/resize
+    gridStack.on('gsresizestop', (event, items) => {
+      items.forEach(item => {
+        const canvas = item.el.querySelector('.chart-canvas');
+        if (canvas) {
+          const chart = echarts.getInstanceByDom(canvas);
+          if (chart) chart.resize();
+        }
+      });
+    });
+    
+    gridStack.on('change', (event, items) => {
+      items.forEach(item => {
+        const canvas = item.el.querySelector('.chart-canvas');
+        if (canvas) {
+          const chart = echarts.getInstanceByDom(canvas);
+          if (chart) {
+            // Defer resize to after layout settles
+            setTimeout(() => chart.resize(), 100);
+          }
+        }
+      });
+    });
+    
+    console.log('Gridstack initialized for drag-to-reposition');
+  } else {
+    console.warn('GridStack not loaded');
+  }
+}
+
+// Call Gridstack init after charts
+setTimeout(() => { initGridstack(); }, 200);
+
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
@@ -415,6 +498,8 @@ window.addEventListener('resize', () => {
       const c = echarts.getInstanceByDom(el);
       if (c) c.resize();
     });
+    // Also resize Gridstack if available
+    if (gridStack) gridStack.resize();
   }, 200);
 });
 </script>

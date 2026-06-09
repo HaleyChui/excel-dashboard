@@ -229,20 +229,28 @@ def _generate_mock_html(suggestions, sheet_data=None):
     colors = ['#00D4AA', '#FFB800', '#5B8FF9', '#FF4757', '#A855F7', '#06B6D4']
     chart_divs_parts = []
     chart_scripts = []
+    # Gridstack layout: 12 columns, place charts in a grid
+    # Each chart takes 6 columns (half width), stack vertically
     for i, s in enumerate(suggestions):
         sid = s['id']
         src_key = f"{s['source']['file']}/{s['source']['sheet']}"
         rows = sheet_data.get(src_key, [])
         c = colors[i % len(colors)]
+        # Gridstack position: x = (i % 2) * 6, y = floor(i / 2) * 10 (each row ~10 grid units high)
+        gs_x = (i % 2) * 6
+        gs_y = (i // 2) * 10
+        gs_w = 6
+        gs_h = 10
         chart_divs_parts.append(
-            '<div class="chart-card-wrap">'
+            '<div class="chart-card-wrap grid-stack-item" gs-x="' + str(gs_x) + '" gs-y="' + str(gs_y) + '" gs-w="' + str(gs_w) + '" gs-h="' + str(gs_h) + '">'
+            '<div class="grid-stack-item-content">'
             '<div class="chart-card">'
             '<div class="chart-header">'
             '<span class="material-symbols-outlined chart-icon">bar_chart</span>'
             '<span class="chart-title">' + s['title'] + '</span>'
             '</div>'
             '<div class="chart-body"><div id="' + sid + '" class="chart-canvas"></div></div>'
-            '</div></div>'
+            '</div></div></div>'
         )
         chart_scripts.append(_build_chart_js(sid, s['type'], s.get('xColumn', ''),
                                              s.get('yColumn', ''), rows, c))
@@ -295,6 +303,10 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
 
     x_vals = get_vals(x_col) if x_col else [str(i+1) for i in range(len(rows))]
 
+    # Color palette
+    default_colors = ['#00D4AA', '#FFB800', '#5B8FF9', '#FF4757', '#A855F7', '#06B6D4', '#F59E0B', '#10B981']
+    cj = json.dumps(default_colors, ensure_ascii=False)
+
     if chart_type == 'pie':
         from collections import defaultdict
         agg = defaultdict(float)
@@ -303,13 +315,31 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             try: agg[k] += float(r.get(y_col, 0))
             except: agg[k] += 0
         dj = json.dumps([{'name': k, 'value': round(v, 2)} for k, v in agg.items()], ensure_ascii=False)
-        cj = json.dumps(['#00D4AA', '#FFB800', '#5B8FF9', '#FF4757', '#A855F7', '#06B6D4', '#F59E0B', '#10B981'], ensure_ascii=False)
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
             "color:" + cj + ","
             "tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)',"
             "backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
             "series:[{type:'pie',radius:['38%','68%'],data:" + dj + ","
+            "label:{color:'#AAA',fontSize:11,formatter:'{b}\\n{d}%'},"
+            "labelLine:{lineStyle:{color:'#2A2A2A'}},"
+            "itemStyle:{borderColor:'#141414',borderWidth:2},"
+            "emphasis:{itemStyle:{shadowBlur:10}}}}]})})()")
+
+    if chart_type == 'doughnut':
+        from collections import defaultdict
+        agg = defaultdict(float)
+        for r in rows:
+            k = str(r.get(x_col, '未知'))
+            try: agg[k] += float(r.get(y_col, 0))
+            except: agg[k] += 0
+        dj = json.dumps([{'name': k, 'value': round(v, 2)} for k, v in agg.items()], ensure_ascii=False)
+        return (
+            "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+            "color:" + cj + ","
+            "tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)',"
+            "backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "series:[{type:'pie',radius:['50%','70%'],data:" + dj + ","
             "label:{color:'#AAA',fontSize:11,formatter:'{b}\\n{d}%'},"
             "labelLine:{lineStyle:{color:'#2A2A2A'}},"
             "itemStyle:{borderColor:'#141414',borderWidth:2},"
@@ -342,6 +372,148 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             "series:[{type:'line',data:" + yj + ",smooth:true,symbol:'circle',symbolSize:5,"
             "lineStyle:{width:2,color:'" + color + "'},itemStyle:{color:'" + color + "'},"
             "areaStyle:{color:'" + color + "15'}}]})})()")
+
+    if chart_type == 'radar':
+        # Radar chart - need multiple numeric columns
+        from collections import defaultdict
+        # Get all numeric columns except x_col
+        numeric_cols = []
+        if rows and len(rows) > 0:
+            for k, v in rows[0].items():
+                if k != x_col and isinstance(v, (int, float)):
+                    numeric_cols.append(k)
+        
+        if not numeric_cols:
+            numeric_cols = [y_col] if y_col else []
+        
+        # Aggregate by x_col
+        agg = defaultdict(lambda: defaultdict(float))
+        for r in rows:
+            k = str(r.get(x_col, '未知'))
+            for nc in numeric_cols:
+                try: agg[k][nc] += float(r.get(nc, 0))
+                except: agg[k][nc] += 0
+        
+        indicators = [{'name': nc, 'max': max((agg[k][nc] for k in agg), default=100)} for nc in numeric_cols]
+        ind_j = json.dumps(indicators, ensure_ascii=False)
+        series_data = []
+        for k, vals in agg.items():
+            series_data.append({'value': [vals[nc] for nc in numeric_cols], 'name': k})
+        sd_j = json.dumps(series_data, ensure_ascii=False)
+        
+        return (
+            "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+            "color:" + cj + ","
+            "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "radar:{indicator:" + ind_j + ","
+            "splitLine:{lineStyle:{color:'#2A2A2A'}},"
+            "splitArea:{areaStyle:{color:['rgba(255,255,255,0.02)','rgba(255,255,255,0.05)']}},"
+            "axisName:{color:'#828282',fontSize:11}},"
+            "series:[{type:'radar',data:" + sd_j + ","
+            "lineStyle:{width:2},"
+            "areaStyle:{opacity:0.2}}]})})()")
+
+    if chart_type == 'treemap':
+        # Treemap - hierarchical data from x_col (category) and y_col (value)
+        from collections import defaultdict
+        agg = defaultdict(float)
+        for r in rows:
+            k = str(r.get(x_col, '未知'))
+            try: agg[k] += float(r.get(y_col, 0))
+            except: agg[k] += 0
+        
+        # Build treemap data
+        tm_data = [{'name': k, 'value': round(v, 2)} for k, v in agg.items()]
+        tm_j = json.dumps(tm_data, ensure_ascii=False)
+        
+        return (
+            "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+            "color:" + cj + ","
+            "tooltip:{trigger:'item',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12},formatter:'{b}: {c}'},"
+            "series:[{type:'treemap',data:" + tm_j + ","
+            "label:{color:'#FFF',fontSize:12,formatter:'{b}\\n{c}'},"
+            "itemStyle:{borderColor:'#141414',borderWidth:2,shadowBlur:10,shadowColor:'rgba(0,0,0,0.5)'},"
+            "emphasis:{itemStyle:{shadowBlur:20}},"
+            "upperLabel:{show:true,height:30,color:'#AAA',fontSize:11}}]})})()")
+
+    if chart_type == 'horizontal_bar' or chart_type == 'bar_horizontal':
+        from collections import defaultdict
+        agg = defaultdict(float)
+        for r in rows:
+            k = str(r.get(x_col, '未知'))
+            try: agg[k] += float(r.get(y_col, 0))
+            except: agg[k] += 0
+        xj = json.dumps(list(agg.keys()), ensure_ascii=False)
+        yj = json.dumps([round(v, 2) for v in agg.values()], ensure_ascii=False)
+        return (
+            "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+            "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "xAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
+            "yAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},"
+            "axisLine:{lineStyle:{color:'#2A2A2A'}}},"
+            "series:[{type:'bar',data:" + yj + ",barWidth:'45%',"
+            "itemStyle:{color:'" + color + "',borderRadius:[0,3,3,0]}}]})})()")
+
+    if chart_type == 'stacked_bar':
+        # Stacked bar - need group column (x_col) and stack dimension (could be another column)
+        # For simplicity, stack by a third column or use all numeric columns
+        from collections import defaultdict
+        # Find a stack column (categorical) - if x_col is group, use another text column
+        stack_col = None
+        if rows and len(rows) > 0:
+            for k, v in rows[0].items():
+                if k != x_col and k != y_col and isinstance(v, str):
+                    stack_col = k
+                    break
+        
+        if stack_col:
+            # Stack by stack_col, group by x_col
+            agg = defaultdict(lambda: defaultdict(float))
+            stacks = set()
+            for r in rows:
+                g = str(r.get(x_col, '未知'))
+                s = str(r.get(stack_col, '其他'))
+                stacks.add(s)
+                try: agg[g][s] += float(r.get(y_col, 0))
+                except: agg[g][s] += 0
+            
+            stacks = list(stacks)
+            series = []
+            colors = default_colors
+            for i, s in enumerate(stacks):
+                data = [agg[g].get(s, 0) for g in agg.keys()]
+                series.append({
+                    'name': s,
+                    'type': 'bar',
+                    'stack': 'total',
+                    'data': data,
+                    'itemStyle': {'color': colors[i % len(colors)]}
+                })
+            xj = json.dumps(list(agg.keys()), ensure_ascii=False)
+            series_j = json.dumps(series, ensure_ascii=False)
+            return (
+                "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+                "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+                "legend:{data:" + json.dumps(stacks, ensure_ascii=False) + ",textStyle:{color:'#AAA'}},"
+                "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},"
+                "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
+                "series:" + series_j + "})})()")
+        else:
+            # Fallback to regular bar
+            agg = defaultdict(float)
+            for r in rows:
+                k = str(r.get(x_col, '未知'))
+                try: agg[k] += float(r.get(y_col, 0))
+                except: agg[k] += 0
+            xj = json.dumps(list(agg.keys()), ensure_ascii=False)
+            yj = json.dumps([round(v, 2) for v in agg.values()], ensure_ascii=False)
+            return (
+                "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
+                "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+                "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},"
+                "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
+                "series:[{type:'bar',data:" + yj + ",barWidth:'45%',"
+                "itemStyle:{color:'" + color + "',borderRadius:[3,3,0,0]}}]})})()")
 
     # bar — aggregate by x_col
     from collections import defaultdict

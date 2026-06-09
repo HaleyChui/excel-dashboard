@@ -136,3 +136,62 @@ def _clean_dataframe(df):
 def parse_excel_batch(file_paths):
     """批次解析多個 Excel"""
     return [parse_excel(p) for p in file_paths]
+
+
+def parse_csv_text(csv_text, delimiter=','):
+    """解析 CSV 文字內容，回傳與 parse_excel 相同格式的結構"""
+    import io
+    import pandas as pd
+    import json
+    
+    try:
+        df = pd.read_csv(io.StringIO(csv_text), delimiter=delimiter, header=0)
+    except Exception as e:
+        return {'error': f'無法解析 CSV: {str(e)}', 'sheets': []}
+    
+    # 型別推斷
+    dtypes = {}
+    for col in df.columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            dtypes[col] = 'numeric'
+        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+            dtypes[col] = 'datetime'
+        else:
+            dtypes[col] = 'text'
+    
+    # 統計摘要
+    stats = {}
+    for col in df.columns:
+        if dtypes[col] == 'numeric':
+            stats[col] = {
+                'min': None if df[col].isna().all() else _to_num(df[col].min()),
+                'max': None if df[col].isna().all() else _to_num(df[col].max()),
+                'mean': None if df[col].isna().all() else _to_num(df[col].mean()),
+                'unique': int(df[col].nunique())
+            }
+        elif dtypes[col] == 'text':
+            stats[col] = {
+                'unique': int(df[col].nunique()),
+                'top_values': df[col].value_counts().head(5).to_dict()
+            }
+    
+    # 空值比例
+    null_ratios = {col: round(float(df[col].isna().mean()), 2)
+                   for col in df.columns}
+    
+    sheet_info = {
+        'name': 'CSV輸入',
+        'columns': list(df.columns),
+        'rows': len(df),
+        'dtypes': dtypes,
+        'stats': stats,
+        'null_ratios': null_ratios,
+        'data': df.fillna('').head(10).to_dict('records'),
+        'data_json_compatible': json.loads(df.fillna('').head(10).to_json(orient='records', date_format='iso')),
+    }
+    
+    return {
+        'filename': 'manual_csv_input',
+        'path': '',
+        'sheets': [sheet_info]
+    }

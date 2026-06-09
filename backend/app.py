@@ -93,6 +93,34 @@ def get_sheet_preview():
     return jsonify({'error': 'sheet not found'}), 404
 
 
+@app.route('/api/parse_csv', methods=['POST'])
+def parse_csv_endpoint():
+    """解析 CSV 文字輸入，回傳欄位與預覽資料"""
+    data = request.get_json()
+    csv_text = data.get('csv_text', '')
+    delimiter = data.get('delimiter', ',')
+    
+    if not csv_text.strip():
+        return jsonify({'error': 'CSV 內容不可為空'}), 400
+    
+    from parser import parse_csv_text
+    result = parse_csv_text(csv_text, delimiter)
+    
+    if 'error' in result:
+        return jsonify({'error': result['error']}), 400
+    
+    # Return the first sheet info
+    sheet = result['sheets'][0]
+    return jsonify({
+        'columns': sheet['columns'],
+        'rows': sheet['rows'],
+        'dtypes': sheet['dtypes'],
+        'stats': sheet['stats'],
+        'preview': sheet['data_json_compatible'][:20],
+        'full_data': sheet['data_json_compatible']
+    })
+
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_data():
     """AI 分析已勾選的 Sheet，建議圖表配對"""
@@ -128,8 +156,7 @@ def generate_dashboard():
         data = request.get_json()
         session_id = data['session_id']
         user_refinements = data.get('refinements', '')
-
-        suggestions = sessions.get(session_id, {}).get('suggestions', [])
+        suggestions = data.get('suggestions') or sessions.get(session_id, {}).get('suggestions', [])
         if not suggestions:
             suggestions = _mock_suggest_from_sheets(session_id)
 
