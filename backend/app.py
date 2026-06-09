@@ -168,6 +168,13 @@ def generate_dashboard():
                 key = f"{filename}/{s['name']}"
                 sheet_data[key] = s.get('data_json_compatible', s.get('data', []))
 
+        # Also include custom data from manually added charts
+        for s in suggestions:
+            if s.get('_customData') and s.get('source'):
+                src_key = f"{s['source']['file']}/{s['source']['sheet']}"
+                if src_key not in sheet_data:
+                    sheet_data[src_key] = s['_customData']
+
         from llm_agent import generate_layout
         try:
             dashboard_html = generate_layout(suggestions, user_refinements, sheet_data)
@@ -272,4 +279,4 @@ def delete_template_route(template_id):
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

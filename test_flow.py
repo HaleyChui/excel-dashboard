@@ -5,7 +5,7 @@ import requests
 import sys
 import json
 
-BASE = 'http://localhost:5173'
+BASE = 'http://localhost:5000'
 
 def check(label, ok):
     print(f'  {label}: {"✅" if ok else "❌"}')
@@ -14,7 +14,7 @@ def check(label, ok):
 # 1. Upload
 print('1️⃣  Upload')
 r = requests.post(f'{BASE}/api/upload', files=[
-    ('files', ('test.xlsx', open('/home/cryptochyi629/Dashboard_Gen/excel-dashboard/test_業績.xlsx', 'rb')))
+    ('files', ('test_業績.xlsx', open('/home/cryptochyi629/Dashboard_Gen/excel-dashboard/test_業績.xlsx', 'rb')))
 ])
 assert r.status_code == 200
 data = r.json()
@@ -55,7 +55,6 @@ assert r.status_code == 200
 html = r.text
 checks = {
     'doctype': '<!DOCTYPE html>' in html,
-    'bootstrap': 'bootstrap' in html.lower(),
     'echarts': 'echarts' in html.lower(),
     'charts': 'echarts' in html.lower() or 'chart' in html.lower(),
     'vue': 'vue' in html.lower(),

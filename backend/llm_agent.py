@@ -73,32 +73,57 @@ def _mock_response(prompt, expect_json):
 
 
 SYSTEM_PROMPT_BASE = """你是一個戰情表生成專家。你的工作是分析使用者上傳的 Excel 資料，
-並生成一個可用的戰情表 HTML 頁面（Vue 3 + Bootstrap 5 + ECharts）。
+並生成一個可用的戰情表 HTML 頁面（Vue 3 + ECharts）。
 
 生成原則：
 1. 使用者提供的是 **實際資料**，不要捏造
 2. 圖表必須使用 ECharts CDN
 3. Vue 3 使用 CDN 載入
-4. Bootstrap 5 使用 CDN 載入
-5. 所有圖表容器必須有固定高度（240-280px）
-6. 繁體中文 UI
-7. 配色參考 Trading Terminal 深色主題"""
+4. 所有圖表容器必須有固定高度（200-240px）
+5. 繁體中文 UI
+6. **設計系統：Precision & Density（精準與密度）**
+   - 基底色：Cool/Slate（淺色背景 #f8fafc，白色卡片）
+   - 僅用邊框建立層次（1px solid #e2e8f0），不使用陰影
+   - 間距基準 4px：4, 8, 12, 16, 24, 32
+   - 銳利圓角：4px / 6px / 8px
+   - 系統字體：system-ui 難襯線，數字用 JetBrains Mono
+   - 緊湊尺寸：Small padding、height、font-size
+   - 強調色：Blue-600 (#2563eb)；獲利 Emerald-600；虧損 Red-600
+7. 無 Bootstrap - 使用原生 CSS + GridStack 12 欄網格"""
 
-DESIGN_SYSTEM_CONTEXT = """
-## 設計系統參考
-### Trading Terminal 暗色主題
---terminal-bg: #0D0D0D; --terminal-surface: #141414;
---terminal-gain: #00D4AA; --terminal-loss: #FF4757;
---terminal-warning: #FFB800; --terminal-border: #2A2A2A;
+DESIGN_SYSTEM_CONTEXT = """## 設計系統參考：Precision & Density
+
+### 色彩系統（Slate Cool Foundation）
+--bg: #f8fafc; --bg-elevated: #ffffff;
+--border: #e2e8f0; --border-strong: #cbd5e1;
+--text: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+--accent: #2563eb; --accent-hover: #1d4ed8;
+--gain: #059669; --loss: #dc2626; --warning: #d97706;
+
+### 間距與圓角（4px 基準）
+--space: 4px; scale: 4, 8, 12, 16, 24, 32
+--radius: 4px; --radius-lg: 6px; --radius-xl: 8px
+
+### 字體
+- UI: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
+- Data: 'JetBrains Mono', monospace
 
 ### Dashboard 佈局
-- 左側邊欄 + 右側內容區
-- 頂部 KPI 卡片列
-- 主圖表區 2-column grid
-- 底部資料表格（zebra stripe, sticky header）
+- 左側邊欄 (220px) + 右側內容區
+- 頂部 KPI 卡片列 (grid, minmax 160px)
+- 主圖表區 GridStack 12 欄網格 (cellHeight 220px)
+- 底部資料表格（sticky header, zebra stripe）
 - 底部洞察分析區塊
-"""
 
+### 元件規格
+- KPI Card: border 1px var(--border), radius 6px, padding 12px 16px
+- Chart Card: border 1px var(--border), radius 6px, header 32px height
+- Table: th sticky, padding 8px 12px, font-size 12px, border-bottom 1px
+- Button: height 32px, padding 8px 12px, radius 4px, font-size 13px
+- Badge: padding 3px 10px, radius 4px, font-size 11px
+
+### Chart 配色
+預設色系: ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#ea580c', '#65a30d']"""
 
 def _build_prompt(selected_sheets, user_refinements=''):
     sheets_json = json.dumps(selected_sheets, ensure_ascii=False, indent=2)
@@ -292,7 +317,7 @@ def _generate_mock_html(suggestions, sheet_data=None):
 
 
 def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
-    """Build ECharts init JS — 使用字串拼接避免 f-string 問題"""
+    """Build ECharts init JS - using string concatenation to avoid f-string issues"""
     if not rows:
         return '// no data for ' + sid
 
@@ -303,8 +328,8 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
 
     x_vals = get_vals(x_col) if x_col else [str(i+1) for i in range(len(rows))]
 
-    # Color palette
-    default_colors = ['#00D4AA', '#FFB800', '#5B8FF9', '#FF4757', '#A855F7', '#06B6D4', '#F59E0B', '#10B981']
+    # Color palette - Precision & Density system
+    default_colors = ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#ea580c', '#65a30d']
     cj = json.dumps(default_colors, ensure_ascii=False)
 
     if chart_type == 'pie':
@@ -319,12 +344,12 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
             "color:" + cj + ","
             "tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)',"
-            "backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "series:[{type:'pie',radius:['38%','68%'],data:" + dj + ","
             "label:{color:'#AAA',fontSize:11,formatter:'{b}\\n{d}%'},"
             "labelLine:{lineStyle:{color:'#2A2A2A'}},"
             "itemStyle:{borderColor:'#141414',borderWidth:2},"
-            "emphasis:{itemStyle:{shadowBlur:10}}}}]})})()")
+            "emphasis:{itemStyle:{shadowBlur:8}}}}]})})()")
 
     if chart_type == 'doughnut':
         from collections import defaultdict
@@ -338,12 +363,12 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
             "color:" + cj + ","
             "tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)',"
-            "backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "series:[{type:'pie',radius:['50%','70%'],data:" + dj + ","
             "label:{color:'#AAA',fontSize:11,formatter:'{b}\\n{d}%'},"
             "labelLine:{lineStyle:{color:'#2A2A2A'}},"
             "itemStyle:{borderColor:'#141414',borderWidth:2},"
-            "emphasis:{itemStyle:{shadowBlur:10}}}}]})})()")
+            "emphasis:{itemStyle:{shadowBlur:8}}}}]})})()")
 
     if chart_type == 'scatter':
         pairs = []
@@ -353,7 +378,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
         pj = json.dumps(pairs)
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-            "tooltip:{trigger:'item',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "tooltip:{trigger:'item',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "xAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A'}},axisLabel:{color:'#828282'}},"
             "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A'}},axisLabel:{color:'#828282'}},"
             "series:[{type:'scatter',symbolSize:12,data:" + pj + ","
@@ -365,7 +390,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
         yj = json.dumps(y_vals, ensure_ascii=False)
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-            "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:10,rotate:30},"
             "axisLine:{lineStyle:{color:'#2A2A2A'}}},"
             "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
@@ -404,7 +429,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
             "color:" + cj + ","
-            "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "radar:{indicator:" + ind_j + ","
             "splitLine:{lineStyle:{color:'#2A2A2A'}},"
             "splitArea:{areaStyle:{color:['rgba(255,255,255,0.02)','rgba(255,255,255,0.05)']}},"
@@ -429,7 +454,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
             "color:" + cj + ","
-            "tooltip:{trigger:'item',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12},formatter:'{b}: {c}'},"
+            "tooltip:{trigger:'item',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12},formatter:'{b}: {c}'},"
             "series:[{type:'treemap',data:" + tm_j + ","
             "label:{color:'#FFF',fontSize:12,formatter:'{b}\\n{c}'},"
             "itemStyle:{borderColor:'#141414',borderWidth:2,shadowBlur:10,shadowColor:'rgba(0,0,0,0.5)'},"
@@ -447,7 +472,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
         yj = json.dumps([round(v, 2) for v in agg.values()], ensure_ascii=False)
         return (
             "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-            "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+            "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
             "xAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
             "yAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},"
             "axisLine:{lineStyle:{color:'#2A2A2A'}}},"
@@ -493,7 +518,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             series_j = json.dumps(series, ensure_ascii=False)
             return (
                 "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-                "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+                "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
                 "legend:{data:" + json.dumps(stacks, ensure_ascii=False) + ",textStyle:{color:'#AAA'}},"
                 "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},"
                 "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
@@ -509,7 +534,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
             yj = json.dumps([round(v, 2) for v in agg.values()], ensure_ascii=False)
             return (
                 "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-                "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+                "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
                 "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},axisLine:{lineStyle:{color:'#2A2A2A'}}},"
                 "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
                 "series:[{type:'bar',data:" + yj + ",barWidth:'45%',"
@@ -526,7 +551,7 @@ def _build_chart_js(sid, chart_type, x_col, y_col, rows, color='#00D4AA'):
     yj = json.dumps([round(v, 2) for v in agg.values()], ensure_ascii=False)
     return (
         "(function(){const c=echarts.init(document.getElementById('" + sid + "'));c.setOption({"
-        "tooltip:{trigger:'axis',backgroundColor:'#1A1A1A',borderColor:'#2A2A2A',textStyle:{color:'#FFF',fontSize:12}},"
+        "tooltip:{trigger:'axis',backgroundColor:'#ffffff',borderColor:'#e2e8f0',textStyle:{color:'#0f172a',fontSize:12}},"
         "xAxis:{type:'category',data:" + xj + ",axisLabel:{color:'#828282',fontSize:11},"
         "axisLine:{lineStyle:{color:'#2A2A2A'}}},"
         "yAxis:{type:'value',splitLine:{lineStyle:{color:'#1A1A1A',type:'dashed'}},axisLabel:{color:'#828282',fontSize:11}},"
