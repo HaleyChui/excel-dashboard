@@ -335,7 +335,7 @@ for (const [key, rows] of Object.entries(SHEET_DATA)) {
 }
 const _headers = _allRows.length ? Object.keys(_allRows[0]).filter(k => !k.startsWith('_')) : [];
 
-createApp({
+const app = createApp({
   setup() {
     const searchQuery = ref('');
     const sortCol = ref(null);
@@ -430,7 +430,16 @@ createApp({
       generatedAt: new Date().toLocaleString('zh-TW'),
     };
   }
-}).mount('#app');
+})
+
+// Mount with error handling
+try {
+  app.mount('#app')
+  console.log('Vue app mounted successfully')
+} catch (e) {
+  console.error('Vue mount failed:', e)
+  console.error(e.stack)
+}
 
 function initCharts() {
 __CHART_SCRIPTS__
