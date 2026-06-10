@@ -259,12 +259,51 @@ import { useRouter, useRoute } from 'vue-router'
 import { useDashboardStore } from '../stores/dashboard'
 import axios from 'axios'
 
+import { onMounted } from 'vue'
+import axios from 'axios'
+
 const router = useRouter()
 const route = useRoute()
 const store = useDashboardStore()
 const generating = ref(false)
 const progressText = ref('')
 const progressPercent = ref(0)
+
+// Load session data on mount
+onMounted(async () => {
+  const sessionId = route.params.sessionId
+  if (sessionId) {
+    store.sessionId = sessionId
+    try {
+      // Load files
+      const filesRes = await axios.get(`/api/session/${sessionId}/files`)
+      store.files = filesRes.data.files || []
+      
+      // Load suggestions
+      const suggestionsRes = await axios.get(`/api/session/${sessionId}/suggestions`)
+      store.suggestions = suggestionsRes.data.suggestions || []
+      
+      // Load selected sheets
+      const sheetsRes = await axios.get(`/api/session/${sessionId}/selected-sheets`)
+      store.selectedSheets = sheetsRes.data.selectedSheets || []
+      
+      // Load user refinements
+      const refinementsRes = await axios.get(`/api/session/${sessionId}/refinements`)
+      store.userRefinements = refinementsRes.data.refinements || ''
+      
+      // Load versions
+      const versionsRes = await axios.get(`/api/session/${sessionId}/versions`)
+      store.versions = versionsRes.data.versions || []
+      
+      // Load generated dashboard URL
+      const dashboardRes = await axios.get(`/api/session/${sessionId}/dashboard-url`)
+      store.generatedDashboardUrl = dashboardRes.data.dashboard_url || ''
+      
+    } catch (e) {
+      console.error('Failed to load session data:', e)
+    }
+  }
+})
 
 // Add Chart Modal state
 const showAddChartModal = ref(false)

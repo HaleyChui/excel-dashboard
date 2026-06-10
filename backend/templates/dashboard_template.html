@@ -407,6 +407,105 @@ for (const [key, rows] of Object.entries(SHEET_DATA)) {
 const _headers = _allRows.length ? Object.keys(_allRows[0]).filter(k => !k.startsWith('_')) : [];
 
 const app = createApp({
+  template: `
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <h5><span class="icon">📊</span>戰情表</h5>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">資料來源</div>
+      <div v-for="src in sources" :key="src.key" class="src-item">
+        <span class="icon">📄</span>
+        <div>
+          <div class="src-file">{{ src.file }}</div>
+          <div class="src-sheet">{{ src.sheet }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">統計</div>
+      <div class="sidebar-stat">
+        <span class="icon">📋</span>
+        <span>{{ rowCount.toLocaleString() }} 列資料</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="icon">📊</span>
+        <span>{{ chartCount }} 張圖表</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header">
+      <h1><span class="icon">📈</span>資料儀表板</h1>
+      <div class="meta-badges">
+        <span class="badge"><span class="icon">📁</span> {{ totalSheets }} 個工作表</span>
+        <span class="badge"><span class="icon">📊</span> {{ chartCount }} 張圖表</span>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card" v-for="kpi in kpis" :key="kpi.label">
+        <div class="kpi-label">{{ kpi.label }}</div>
+        <div class="kpi-value">{{ kpi.value }}</div>
+      </div>
+    </div>
+
+    <div class="chart-grid grid-stack" id="chartGrid" data-gs-auto="true" data-gs-animate="true" data-gs-cell-height="220" data-gs-column="12" data-gs-min-width="600">
+      __CHART_DIVS__
+    </div>
+
+    <div class="table-controls">
+      <div class="table-search">
+        <span class="search-icon material-symbols-outlined">search</span>
+        <input type="text" placeholder="搜尋表格資料..." v-model="searchQuery" @input="onSearch" />
+      </div>
+      <div class="table-info">{{ filteredRowCount }} / {{ totalRowCount }} 筆</div>
+    </div>
+    <div class="data-table-wrap">
+      <div class="data-table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th v-for="(h, i) in tableHeaders" :key="i" :class="{ sorted: sortCol === i }" @click="sortTable(i)">
+                {{ h }}
+                <span class="sort-icon material-symbols-outlined">{{ sortCol === i ? (sortAsc ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, ri) in displayedRows" :key="ri">
+              <td v-for="(h, ci) in tableHeaders" :key="ci" :title="formatCell(row[h])">{{ formatCell(row[h]) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination" v-if="totalPages > 1">
+        <div class="page-info">第 {{ currentPage }} / {{ totalPages }} 頁</div>
+        <div class="page-btns">
+          <button class="page-btn" @click="currentPage = 1" :disabled="currentPage <= 1">«</button>
+          <button class="page-btn" @click="currentPage--" :disabled="currentPage <= 1">‹</button>
+          <button class="page-btn" v-for="p in pageButtons" :key="p" :class="{ active: p === currentPage }" @click="currentPage = p">{{ p }}</button>
+          <button class="page-btn" @click="currentPage++" :disabled="currentPage >= totalPages">›</button>
+          <button class="page-btn" @click="currentPage = totalPages" :disabled="currentPage >= totalPages">»</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="insights" v-if="insights.length">
+      <h6><span class="icon">💡</span>洞察分析</h6>
+      <ul>
+        <li v-for="(ins,i) in insights" :key="i" v-html="ins"></li>
+      </ul>
+    </div>
+    <div class="meta-footer">
+      <span class="icon">🕐</span>
+      產出於 {{ generatedAt }}
+    </div>
+  </main>
+</div>
+  `,
   setup() {
     const searchQuery = ref('');
     const sortCol = ref(null);

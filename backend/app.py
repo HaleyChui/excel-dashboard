@@ -149,6 +149,70 @@ def analyze_data():
     return jsonify({'suggestions': suggestions})
 
 
+@app.route('/api/session/<session_id>/files', methods=['GET'])
+def get_session_files(session_id):
+    """取得 session 的檔案列表"""
+    sess = sessions.get(session_id)
+    if not sess:
+        return jsonify({'error': 'session not found'}), 404
+    return jsonify({'files': sess.get('files', [])})
+
+
+@app.route('/api/session/<session_id>/suggestions', methods=['GET'])
+def get_session_suggestions(session_id):
+    """取得 session 的圖表建議"""
+    sess = sessions.get(session_id)
+    if not sess:
+        return jsonify({'error': 'session not found'}), 404
+    return jsonify({'suggestions': sess.get('suggestions', [])})
+
+
+@app.route('/api/session/<session_id>/selected-sheets', methods=['GET'])
+def get_session_selected_sheets(session_id):
+    """取得 session 的已勾選工作表"""
+    sess = sessions.get(session_id)
+    if not sess:
+        return jsonify({'error': 'session not found'}), 404
+    return jsonify({'selectedSheets': sess.get('selectedSheets', [])})
+
+
+@app.route('/api/session/<session_id>/refinements', methods=['GET'])
+def get_session_refinements(session_id):
+    """取得 session 的使用者補充需求"""
+    sess = sessions.get(session_id)
+    if not sess:
+        return jsonify({'error': 'session not found'}), 404
+    return jsonify({'refinements': sess.get('userRefinements', '')})
+
+
+@app.route('/api/session/<session_id>/versions', methods=['GET'])
+def get_session_versions_api(session_id):
+    """取得 session 的版本列表"""
+    from models import get_versions
+    versions = get_versions(session_id)
+    return jsonify({'versions': versions})
+
+
+@app.route('/api/session/<session_id>/dashboard-url', methods=['GET'])
+def get_session_dashboard_url(session_id):
+    """取得 session 的儀表板 URL"""
+    from models import get_versions
+    versions = get_versions(session_id)
+    if not versions:
+        return jsonify({'dashboard_url': ''})
+    latest_version = versions[0]['version']
+    return jsonify({'dashboard_url': f'/dashboard/{session_id}/v{latest_version}'})
+
+
+@app.route('/api/session/<session_id>/selected-sheets', methods=['GET'])
+def get_session_selected_sheets_endpoint(session_id):
+    """取得 session 的已勾選工作表"""
+    sess = sessions.get(session_id)
+    if not sess:
+        return jsonify({'error': 'session not found'}), 404
+    return jsonify({'selectedSheets': sess.get('selectedSheets', [])})
+
+
 @app.route('/api/generate', methods=['POST'])
 def generate_dashboard():
     """LLM 生成戰情表 HTML"""
